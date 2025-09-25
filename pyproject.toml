@@ -5,25 +5,41 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry]
 name = "langchain-opendataloader-pdf"
 version = "0.1.0"
-description = "An integration package connecting OpenDataLoaderPDF and LangChain"
-authors = []
+description = "A LangChain integration for OpenDataLoader PDF"
+authors = ["opendataloader-project <open.dataloader@hancom.com>"]
 readme = "README.md"
-repository = "https://github.com/opendataloader-project/opendataloader-pdf-langchain"
 license = "MIT"
-
-[tool.mypy]
-disallow_untyped_defs = "True"
+license-files = ["LICENSE"]
+keywords = ["langchain", "dataloader", "pdf", "document loader", "ai", "document-parsing", "document"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
 
 [tool.poetry.urls]
-"Source Code" = "https://github.com/langchain-ai/langchain/tree/master/libs/partners/opendataloader-pdf"
-"Release Notes" = "https://github.com/langchain-ai/langchain/releases?q=tag%3A%22opendataloader-pdf%3D%3D0%22&expanded=true"
+Homepage = "https://github.com/opendataloader-project/opendataloader-pdf"
+Repository = "https://github.com/opendataloader-project/opendataloader-pdf-langchain"
+Issues = "https://github.com/opendataloader-project/opendataloader-pdf-langchain/issues"
 
 [tool.poetry.dependencies]
 python = ">=3.9,<4.0"
-langchain-core = "^0.3.15"
+langchain-core = "^0.3.20"
+# This is the core dependency for your loader to function.
+opendataloader-pdf = "^1.0.3"  # PEP 440 version specifier, adjust as needed
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "T201"]
+
+[tool.mypy]
+disallow_untyped_defs = "True"
 
 [tool.coverage.run]
 omit = ["tests/*"]
@@ -33,39 +49,19 @@ addopts = "--strict-markers --strict-config --durations=5"
 markers = [
     "compile: mark placeholder test used to compile integration tests without running them",
 ]
-asyncio_mode = "auto"
 
-[tool.poetry.group.test]
-optional = true
-
-[tool.poetry.group.codespell]
-optional = true
-
-[tool.poetry.group.test_integration]
-optional = true
-
-[tool.poetry.group.lint]
-optional = true
-
-[tool.poetry.group.dev]
-optional = true
-
+# Development and testing dependencies are grouped here for convenience.
 [tool.poetry.group.dev.dependencies]
-
-[tool.poetry.group.test.dependencies]
-pytest = "^7.4.3"
+# Testing
+pytest = "^8.0.0"
 pytest-asyncio = "^0.23.2"
 pytest-socket = "^0.7.0"
 pytest-watcher = "^0.3.4"
 langchain-tests = "^0.3.5"
 
-[tool.poetry.group.codespell.dependencies]
+# Linting and Formatting
+ruff = "^0.5"
 codespell = "^2.2.6"
 
-[tool.poetry.group.test_integration.dependencies]
-
-[tool.poetry.group.lint.dependencies]
-ruff = "^0.5"
-
-[tool.poetry.group.typing.dependencies]
+# Type Checking
 mypy = "^1.10"

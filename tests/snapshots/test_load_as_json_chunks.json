@@ -1,0 +1,24 @@
+{
+    "documents": [
+        {
+            "id": null,
+            "metadata": {
+                "page": 1,
+                "type": "paragraph",
+                "source": "dummy.pdf"
+            },
+            "page_content": "Top-level paragraph.",
+            "type": "Document"
+        },
+        {
+            "id": null,
+            "metadata": {
+                "page": 1,
+                "type": "paragraph",
+                "source": "dummy.pdf"
+            },
+            "page_content": "Nested paragraph.",
+            "type": "Document"
+        }
+    ]
+}

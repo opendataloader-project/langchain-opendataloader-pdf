@@ -1,0 +1,12 @@
+{
+    "documents": [
+        {
+            "id": null,
+            "metadata": {
+                "source": "dummy.pdf"
+            },
+            "page_content": "This is the raw text output from the PDF.",
+            "type": "Document"
+        }
+    ]
+}
