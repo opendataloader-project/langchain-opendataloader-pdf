@@ -1,73 +1,126 @@
-"""OpenDataLoaderPDF document loader."""
-
-from typing import Iterator
+import json
+import logging
+from pathlib import Path
+from typing import Any, Dict, Iterator, List, Union
 
 from langchain_core.document_loaders.base import BaseLoader
 from langchain_core.documents import Document
 
+try:
+    import opendataloader_pdf
+except ImportError:
+    raise ImportError(
+        "`opendataloader-pdf` package not found. "
+        "Please install it with `pip install opendataloader-pdf`"
+    )
+
+logger = logging.getLogger(__name__)
+
 
 class OpenDataLoaderPDFLoader(BaseLoader):
-    # TODO: Replace all TODOs in docstring. See example docstring:
-    # https://github.com/langchain-ai/langchain/blob/869523ad728e6b76d77f170cce13925b4ebc3c1e/libs/community/langchain_community/document_loaders/recursive_url_loader.py#L54
-    """
-    OpenDataLoaderPDF document loader integration
+    """Load PDF files using `OpenDataLoaderPDF`.
 
-    # TODO: Replace with relevant packages, env vars.
+    This loader internally calls the `opendataloader-pdf` Python wrapper,
+    which executes the underlying Java engine to extract structured content
+    from PDFs. The results are converted into LangChain `Document` objects.
+    This loader recursively parses the JSON output to capture all nested text content.
+
     Setup:
-        Install ``opendataloader-pdf-langchain`` and set environment variable ``OPENDATALOADERPDF_API_KEY``.
+        Install the `opendataloader-pdf` package and ensure Java 11 or later is
+        installed and available in your system's PATH.
 
         .. code-block:: bash
 
-            pip install -U opendataloader-pdf-langchain
-            export OPENDATALOADERPDF_API_KEY="your-api-key"
+            pip install -U opendataloader-pdf
 
-    # TODO: Replace with relevant init params.
     Instantiate:
         .. code-block:: python
 
-            from langchain_community.document_loaders import OpenDataLoaderPDFLoader
+            from langchain_opendataloader_pdf import OpenDataLoaderPDFLoader
 
-            loader = OpenDataLoaderPDFLoader(
-                # required params = ...
-                # other params = ...
+            # Load a single file
+            loader = OpenDataLoaderPDFLoader("example.pdf")
+            docs = loader.load()
+
+            # Load multiple files
+            loader = OpenDataLoaderPDFLoader(["doc1.pdf", "doc2.pdf"])
+            docs = loader.load()
+    """
+
+    def __init__(
+        self,
+        file_path: Union[str, Path, List[Union[str, Path]]],
+        no_json: bool = False,
+        **kwargs: Any,
+    ):
+        """Initialize the loader.
+
+        Args:
+            file_path: A path or list of paths to the PDF file(s).
+            no_json: If True, skips JSON parsing and returns the entire text
+                     content as a single Document.
+            **kwargs: Additional keyword arguments to pass to the
+                      `opendataloader_pdf.run` function.
+        """
+        if isinstance(file_path, (str, Path)):
+            self.file_paths = [Path(file_path)]
+        else:
+            self.file_paths = [Path(p) for p in file_path]
+
+        self.no_json = no_json
+        self.extra_args = kwargs
+
+    def _parse_node_recursively(
+        self, node: Dict[str, Any], source: str
+    ) -> Iterator[Document]:
+        """Recursively parse a JSON node and its children."""
+        # 1. If the current node has text content, create a Document.
+        content = node.get("content", "")
+        if content:
+            yield Document(
+                page_content=content,
+                metadata={
+                    "page": node.get("page number", None),
+                    "type": node.get("type", None),
+                    "source": source,
+                },
             )
 
-    Lazy load:
-        .. code-block:: python
+        # 2. If the node has nested 'kids', recursively call this function for each child.
+        if "kids" in node and isinstance(node["kids"], list):
+            for child_node in node["kids"]:
+                yield from self._parse_node_recursively(child_node, source)
 
-            docs = []
-            docs_lazy = loader.lazy_load()
-
-            # async variant:
-            # docs_lazy = await loader.alazy_load()
-
-            for doc in docs_lazy:
-                docs.append(doc)
-            print(docs[0].page_content[:100])
-            print(docs[0].metadata)
-
-        .. code-block:: python
-
-            TODO: Example output
-
-    # TODO: Delete if async load is not implemented
-    Async load:
-        .. code-block:: python
-
-            docs = await loader.aload()
-            print(docs[0].page_content[:100])
-            print(docs[0].metadata)
-
-        .. code-block:: python
-
-            TODO: Example output
-
-    """  # noqa: E501
-
-    # TODO: This method must be implemented to load documents.
-    # Do not implement load(), a default implementation is already available.
     def lazy_load(self) -> Iterator[Document]:
-        raise NotImplementedError()
+        """Sequentially process each PDF file and yield Documents."""
+        for path in self.file_paths:
+            try:
+                output = opendataloader_pdf.run(
+                    input_path=str(path),
+                    no_json=self.no_json,
+                    **self.extra_args,
+                )
 
-    # TODO: Implement if you would like to change default BaseLoader implementation
-    # async def alazy_load(self) -> AsyncIterator[Document]:
+                if not self.no_json:
+                    try:
+                        data = json.loads(output)
+                        # Start the recursive parsing from the top-level 'kids' array.
+                        for top_level_node in data.get("kids", []):
+                            yield from self._parse_node_recursively(
+                                top_level_node, str(path)
+                            )
+
+                    except json.JSONDecodeError:
+                        logger.debug(
+                            f"Could not parse JSON for {path}. "
+                            "Returning entire output as a single document."
+                        )
+                        yield Document(
+                            page_content=output, metadata={"source": str(path)}
+                        )
+                else:
+                    yield Document(page_content=output, metadata={"source": str(path)})
+
+            except Exception as e:
+                logger.error(f"Error processing file {path}: {e}")
+                continue
