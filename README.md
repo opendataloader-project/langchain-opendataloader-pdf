@@ -1,6 +1,6 @@
 # langchain-opendataloader-pdf
 
-A lightweight adapter that plugs the [OpenDataLoader PDF](https://github.com/opendataloader-project/opendataloader-pdf) engine into the LangChain document loader API. The loader calls the Java-based extractor, parses the structured JSON output, and yields ready-to-use LangChain `Document` objects.
+This package integrates the [OpenDataLoader PDF](https://github.com/opendataloader-project/opendataloader-pdf) engine with LangChain by providing a document loader which parses PDFs into structured `Document` objects.
 
 ## Features
 - Stream over one or many PDF files while keeping metadata such as page numbers and node types
@@ -76,6 +76,24 @@ make test      # unit test suite (network disabled)
 make integration_tests  # runs tests that may touch the network
 ```
 You can also call the underlying Poetry commands directly (e.g., `poetry run pytest`).
+
+**Note for Windows Users:**
+
+If the `make` command is not available on your system, you can run the quality checks using the following commands directly:
+
+*   **Linting:**
+    ```bash
+    poetry run ruff check .
+    poetry run mypy .
+    ```
+*   **Unit Tests:**
+    ```bash
+    poetry run pytest --disable-socket --allow-unix-socket
+    ```
+*   **Integration Tests:**
+    ```bash
+    poetry run pytest
+    ```
 
 ## Publishing notes
 Run `poetry check` and `poetry build` to verify the package metadata before uploading to PyPI. Confirm that `langchain_opendataloader_pdf/py.typed` is present in the wheel so consumers benefit from typing information.

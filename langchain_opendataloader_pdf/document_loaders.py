@@ -86,7 +86,7 @@ class OpenDataLoaderPDFLoader(BaseLoader):
                 },
             )
 
-        # 2. If the node has nested 'kids', recursively call this function for each child.
+                # 2. Recursively call this function for each child in 'kids'.
         if "kids" in node and isinstance(node["kids"], list):
             for child_node in node["kids"]:
                 yield from self._parse_node_recursively(child_node, source)

@@ -2,17 +2,15 @@ import json
 from pathlib import Path
 
 import pytest
-from langchain_core.documents import Document
 
 # Import the loader class to be tested.
 # This path might need to be adjusted based on your actual project structure.
 from langchain_opendataloader_pdf import OpenDataLoaderPDFLoader
 
-
 # --- Snapshot Management ---
 # Set to True to generate/update snapshot files.
 # Set to False to compare results against existing snapshots.
-GEN_SNAPSHOTS = True
+GEN_SNAPSHOTS = False
 SNAPSHOT_DIR = Path(__file__).parent / "snapshots"
 
 
@@ -63,7 +61,7 @@ def test_load_as_json_chunks(monkeypatch: pytest.MonkeyPatch):
     )
 
     # Use monkeypatch to intercept the opendataloader_pdf.run function.
-    # The string path must match where the 'run' function is imported in your loader file.
+    # The path must match where the 'run' function is imported in your loader file.
     monkeypatch.setattr(
         "langchain_opendataloader_pdf.document_loaders.opendataloader_pdf.run",
         lambda *args, **kwargs: mock_json_output,
