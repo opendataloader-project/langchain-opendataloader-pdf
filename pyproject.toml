@@ -2,20 +2,18 @@
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.poetry]
+[project]
 name = "langchain-opendataloader-pdf"
 version = "0.1.0"
 description = "A LangChain integration for OpenDataLoader PDF"
-authors = ["opendataloader-project <open.dataloader@hancom.com>"]
 readme = "README.md"
 license = "MIT"
-license-files = ["LICENSE"]
+authors = [{ name = "opendataloader-project", email = "open.dataloader@hancom.com" }]
 keywords = ["langchain", "dataloader", "pdf", "document loader", "ai", "document-parsing", "document"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.9",
@@ -23,17 +21,17 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
+requires-python = ">=3.9,<4.0"
+dependencies = [
+    "langchain-core>=0.3.20,<0.4.0",
+    # This is the core dependency for your loader to function.
+    "opendataloader-pdf>=1.0.3,<2.0.0",
+]
 
-[tool.poetry.urls]
+[project.urls]
 Homepage = "https://github.com/opendataloader-project/opendataloader-pdf"
 Repository = "https://github.com/opendataloader-project/opendataloader-pdf-langchain"
 Issues = "https://github.com/opendataloader-project/opendataloader-pdf-langchain/issues"
-
-[tool.poetry.dependencies]
-python = ">=3.9,<4.0"
-langchain-core = "^0.3.20"
-# This is the core dependency for your loader to function.
-opendataloader-pdf = "^1.0.3"  # PEP 440 version specifier, adjust as needed
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "T201"]
