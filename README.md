@@ -27,12 +27,11 @@ for doc in documents:
 ```
 
 ## Parameters
-- Supported output formats: `json`, `text`, `html`, `markdown`
 
 | Parameter                | Type                  | Required   | Default      | Description                                                                                                        |
 |--------------------------|-----------------------| ---------- |--------------|--------------------------------------------------------------------------------------------------------------------|
 | `file_path`              | `List[str]`           | ✅ Yes     | —            | One or more PDF file paths or directories to process.                                                              |
-| `format`                 | `str`                 | No         | `None`       | Output formats (e.g. `"json"`, `"html"`, `"markdown"`, `"text"`, `"markdown").                                     |
+| `format`                 | `str`                 | No         | `None`       | Output formats (e.g. `"json"`, `"html"`, `"markdown"`, `"text"`).                                                  |
 | `quiet`                  | `bool`                | No         | `False`      | Suppresses CLI logging output when `True`.                                                                         |
 | `content_safety_off`     | `Optional[List[str]]` | No         | `None`       | List of content safety filters to disable (e.g. `"all"`, `"hidden-text"`, `"off-page"`, `"tiny"`, `"hidden-ocg"`). |
 
