@@ -24,14 +24,13 @@ classifiers = [
 requires-python = ">=3.9,<4.0"
 dependencies = [
     "langchain-core>=0.3.20,<0.4.0",
-    # This is the core dependency for your loader to function.
-    "opendataloader-pdf>=1.0.3,<2.0.0",
+    "opendataloader-pdf>=1.1.0",
 ]
 
 [project.urls]
 Homepage = "https://github.com/opendataloader-project/opendataloader-pdf"
-Repository = "https://github.com/opendataloader-project/opendataloader-pdf-langchain"
-Issues = "https://github.com/opendataloader-project/opendataloader-pdf-langchain/issues"
+Repository = "https://github.com/opendataloader-project/langchain-opendataloader-pdf"
+Issues = "https://github.com/opendataloader-project/langchain-opendataloader-pdf/issues"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "T201"]

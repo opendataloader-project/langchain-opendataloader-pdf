@@ -2,62 +2,39 @@
 
 This package integrates the [OpenDataLoader PDF](https://github.com/opendataloader-project/opendataloader-pdf) engine with LangChain by providing a document loader which parses PDFs into structured `Document` objects.
 
-## Features
-- Stream over one or many PDF files while keeping metadata such as page numbers and node types
-- Recursively traverse the OpenDataLoader `kids` hierarchy to capture every text fragment
-- Toggle JSON parsing off with `no_json=True` when you prefer the raw text payload
-- Ships with `py.typed` so static type checkers (mypy, pyright, etc.) understand the package
-
 ## Requirements
-- Python >= 3.9, < 4.0
+- Python >= 3.9
 - Java 11 or newer available on the system `PATH`
-- The `opendataloader-pdf` Python package (installed automatically when you install this project)
+- opendataloader-pdf >= 1.1.0
 
 ## Installation
 ```bash
 pip install -U langchain-opendataloader-pdf
 ```
-> The dependency on `opendataloader-pdf` is declared in `pyproject.toml`, so the package is installed together with this integration. Ensure Java is discoverable on your machine before importing the loader.
 
 ## Quick start
 ```python
 from langchain_opendataloader_pdf import OpenDataLoaderPDFLoader
 
-loader = OpenDataLoaderPDFLoader("sample.pdf")
+loader = OpenDataLoaderPDFLoader(
+    file_path=["path/to/document.pdf", "path/to/folder"], 
+    format="text"
+)
 documents = loader.load()
+
 for doc in documents:
-    print(doc.metadata["page"], doc.page_content[:80])
+    print(doc.metadata, doc.page_content[:80])
 ```
 
-### Multiple files and extra options
-You can pass a list of files and forward any supported keyword arguments to `opendataloader_pdf.run`.
+## Parameters
+- Supported output formats: `json`, `text`, `html`, `markdown`
 
-```python
-loader = OpenDataLoaderPDFLoader([
-    "report.pdf",
-    "appendix.pdf",
-], output_format="JSON", preserve_line_breaks=True)
-
-for document in loader.lazy_load():
-    # process each chunk as it streams in
-    ...
-```
-
-### Processing a Directory
-You can also provide a path to a directory. The loader will find and process all PDF files within it.
-
-```python
-# Load all PDFs from a directory
-loader = OpenDataLoaderPDFLoader("path/to/my/pdf_folder/")
-docs = loader.load()
-```
-
-### Raw text mode
-If the downstream pipeline does not need the JSON tree, set `no_json=True` to receive one `Document` per file containing the full text.
-
-```python
-loader = OpenDataLoaderPDFLoader("scanned.pdf", no_json=True)
-```
+| Parameter                | Type                  | Required   | Default      | Description                                                                                                        |
+|--------------------------|-----------------------| ---------- |--------------|--------------------------------------------------------------------------------------------------------------------|
+| `file_path`              | `List[str]`           | ✅ Yes     | —            | One or more PDF file paths or directories to process.                                                              |
+| `format`                 | `str`                 | No         | `None`       | Output formats (e.g. `"json"`, `"html"`, `"markdown"`, `"text"`, `"markdown").                                     |
+| `quiet`                  | `bool`                | No         | `False`      | Suppresses CLI logging output when `True`.                                                                         |
+| `content_safety_off`     | `Optional[List[str]]` | No         | `None`       | List of content safety filters to disable (e.g. `"all"`, `"hidden-text"`, `"off-page"`, `"tiny"`, `"hidden-ocg"`). |
 
 ## Development workflow
 This repository uses [Poetry](https://python-poetry.org/) for dependency management. If you don't have Poetry installed, please follow the [official installation guide](https://python-poetry.org/docs/#installation).
