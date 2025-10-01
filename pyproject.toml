@@ -24,7 +24,7 @@ classifiers = [
 requires-python = ">=3.9,<4.0"
 dependencies = [
     "langchain-core>=0.3.20,<0.4.0",
-    "opendataloader-pdf>=1.1.0",
+    "opendataloader-pdf>=1.1.1",
 ]
 
 [project.urls]
