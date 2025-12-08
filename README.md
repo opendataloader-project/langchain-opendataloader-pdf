@@ -3,9 +3,9 @@
 This package integrates the [OpenDataLoader PDF](https://github.com/opendataloader-project/opendataloader-pdf) engine with LangChain by providing a document loader which parses PDFs into structured `Document` objects.
 
 ## Requirements
-- Python >= 3.9
+- Python >= 3.10
 - Java 11 or newer available on the system `PATH`
-- opendataloader-pdf >= 1.1.0
+- opendataloader-pdf >= 1.3.0
 
 ## Installation
 ```bash
