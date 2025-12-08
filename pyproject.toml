@@ -16,15 +16,16 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
-requires-python = ">=3.9,<4.0"
+requires-python = ">=3.10,<4.0"
 dependencies = [
-    "langchain-core>=0.3.20,<0.4.0",
-    "opendataloader-pdf>=1.1.1",
+    "langchain-core>=1.0,<2.0",
+    "opendataloader-pdf>=1.3.0",
 ]
 
 [project.urls]
@@ -36,7 +37,7 @@ Issues = "https://github.com/opendataloader-project/langchain-opendataloader-pdf
 select = ["E", "F", "I", "T201"]
 
 [tool.mypy]
-disallow_untyped_defs = "True"
+disallow_untyped_defs = "true"
 
 [tool.coverage.run]
 omit = ["tests/*"]
