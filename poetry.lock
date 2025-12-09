@@ -429,14 +429,14 @@ files = [
 
 [[package]]
 name = "langchain-core"
-version = "1.1.1"
+version = "1.1.2"
 description = "Building applications with LLMs through composability"
 optional = false
 python-versions = "<4.0.0,>=3.10.0"
 groups = ["main", "dev"]
 files = [
-    {file = "langchain_core-1.1.1-py3-none-any.whl", hash = "sha256:98c8cfe7a29448f9d987313be1afac2686e3d12f2f38be024ee9f729ff7cb87c"},
-    {file = "langchain_core-1.1.1.tar.gz", hash = "sha256:029877a34ac5dedefe9c5c36e3c1206e56fc4cac6025df933277451b6df177ad"},
+    {file = "langchain_core-1.1.2-py3-none-any.whl", hash = "sha256:74dfd4dcc10a290e3701a64e35e0bea3f68420f5b7527820ced9414f5b2dc281"},
+    {file = "langchain_core-1.1.2.tar.gz", hash = "sha256:75456c5cc10c3b53b80488bf5c6a4bcc3447b53e011533a8744bb0638b85dd78"},
 ]
 
 [package.dependencies]
@@ -451,19 +451,19 @@ uuid-utils = ">=0.12.0,<1.0"
 
 [[package]]
 name = "langchain-tests"
-version = "0.3.22"
+version = "1.0.2"
 description = "Standard tests for LangChain implementations"
 optional = false
-python-versions = "<4.0.0,>=3.9.0"
+python-versions = "<4.0.0,>=3.10.0"
 groups = ["dev"]
 files = [
-    {file = "langchain_tests-0.3.22-py3-none-any.whl", hash = "sha256:b38173666236740343432ca1619fc7f742657649ff9e237ac89db5be921ee819"},
-    {file = "langchain_tests-0.3.22.tar.gz", hash = "sha256:f4a57e5fdd9d4b0b30b7525f64cfaf959dc62f44b6825427abcce6bbbc83db72"},
+    {file = "langchain_tests-1.0.2-py3-none-any.whl", hash = "sha256:713936d9e474ba39eeade95ee8e9d2e237b15a74d4896cae66ef1a9bd0a44d48"},
+    {file = "langchain_tests-1.0.2.tar.gz", hash = "sha256:7e96d82499ee32ab141e93bdeb122c942db41ff326bcc87ca27290ede92f0f78"},
 ]
 
 [package.dependencies]
 httpx = ">=0.28.1,<1.0.0"
-langchain-core = ">=0.3.77,<2.0.0"
+langchain-core = ">=1.1.0,<2.0.0"
 numpy = [
     {version = ">=1.26.2", markers = "python_version < \"3.13\""},
     {version = ">=2.1.0", markers = "python_version >= \"3.13\""},
@@ -1937,15 +1937,15 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 
 [[package]]
 name = "urllib3"
-version = "2.6.0"
+version = "2.6.1"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
 optional = false
 python-versions = ">=3.9"
 groups = ["main", "dev"]
 markers = "platform_python_implementation != \"PyPy\""
 files = [
-    {file = "urllib3-2.6.0-py3-none-any.whl", hash = "sha256:c90f7a39f716c572c4e3e58509581ebd83f9b59cced005b7db7ad2d22b0db99f"},
-    {file = "urllib3-2.6.0.tar.gz", hash = "sha256:cb9bcef5a4b345d5da5d145dc3e30834f58e8018828cbc724d30b4cb7d4d49f1"},
+    {file = "urllib3-2.6.1-py3-none-any.whl", hash = "sha256:e67d06fe947c36a7ca39f4994b08d73922d40e6cca949907be05efa6fd75110b"},
+    {file = "urllib3-2.6.1.tar.gz", hash = "sha256:5379eb6e1aba4088bae84f8242960017ec8d8e3decf30480b3a1abdaa9671a3f"},
 ]
 
 [package.extras]
@@ -2433,4 +2433,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4.0"
-content-hash = "f07bb2728aaa91e202ec2493cb8720bd025dd5c5ff1acfb7107002080b916435"
+content-hash = "7619ee05991ec3b2a77fa2a5f87f9fca8be9d12e795807bcb390cd465bd3a761"
