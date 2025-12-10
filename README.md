@@ -36,40 +36,16 @@ for doc in documents:
 | `content_safety_off`     | `Optional[List[str]]` | No         | `None`       | List of content safety filters to disable (e.g. `"all"`, `"hidden-text"`, `"off-page"`, `"tiny"`, `"hidden-ocg"`). |
 
 ## Development workflow
-This repository uses [Poetry](https://python-poetry.org/) for dependency management. If you don't have Poetry installed, please follow the [official installation guide](https://python-poetry.org/docs/#installation).
+This repository uses [Poetry](https://python-poetry.org/) for dependency management. If you don't have Poetry installed, please follow the [official installation guide](https://python-poetry.org/#installation).
 
 Once Poetry is installed, you can install the project dependencies:
 ```bash
-poetry install --with dev
+poetry install
 ```
 
 Common tasks are mirrored in the `Makefile` so you can run them with or without Poetry.
 
-## Quality checks
-```bash
-make lint      # ruff + mypy
-make test      # unit test suite (network disabled)
-make integration_tests  # runs tests that may touch the network
-```
-You can also call the underlying Poetry commands directly (e.g., `poetry run pytest`).
 
-**Note for Windows Users:**
-
-If the `make` command is not available on your system, you can run the quality checks using the following commands directly:
-
-*   **Linting:**
-    ```bash
-    poetry run ruff check .
-    poetry run mypy .
-    ```
-*   **Unit Tests:**
-    ```bash
-    poetry run pytest --disable-socket --allow-unix-socket
-    ```
-*   **Integration Tests:**
-    ```bash
-    poetry run pytest
-    ```
 
 ## Publishing notes
 Run `poetry check` and `poetry build` to verify the package metadata before uploading to PyPI. Confirm that `langchain_opendataloader_pdf/py.typed` is present in the wheel so consumers benefit from typing information.
