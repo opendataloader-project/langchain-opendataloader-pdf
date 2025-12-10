@@ -32,34 +32,3 @@ dependencies = [
 Homepage = "https://github.com/opendataloader-project/opendataloader-pdf"
 Repository = "https://github.com/opendataloader-project/langchain-opendataloader-pdf"
 Issues = "https://github.com/opendataloader-project/langchain-opendataloader-pdf/issues"
-
-[tool.ruff.lint]
-select = ["E", "F", "I", "T201"]
-
-[tool.mypy]
-disallow_untyped_defs = "true"
-
-[tool.coverage.run]
-omit = ["tests/*"]
-
-[tool.pytest.ini_options]
-addopts = "--strict-markers --strict-config --durations=5"
-markers = [
-    "compile: mark placeholder test used to compile integration tests without running them",
-]
-
-# Development and testing dependencies are grouped here for convenience.
-[tool.poetry.group.dev.dependencies]
-# Testing
-pytest = "^8.0.0"
-pytest-asyncio = "^0.23.2"
-pytest-socket = "^0.7.0"
-pytest-watcher = "^0.3.4"
-langchain-tests = "^1.0.0"
-
-# Linting and Formatting
-ruff = "^0.5"
-codespell = "^2.2.6"
-
-# Type Checking
-mypy = "^1.10"
