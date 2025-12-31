@@ -1,7 +1,10 @@
+import json
 import logging
+import re
 import tempfile
+from collections import defaultdict
 from pathlib import Path
-from typing import Iterator, List, Union, Optional
+from typing import Any, Dict, Iterator, List, Union, Optional
 from langchain_core.document_loaders.base import BaseLoader
 from langchain_core.documents import Document
 import opendataloader_pdf
@@ -57,6 +60,7 @@ class OpenDataLoaderPDFLoader(BaseLoader):
         html_page_separator: Optional[str] = None,
         image_output: Optional[str] = None,
         image_format: Optional[str] = None,
+        split_pages: bool = True,
     ):
         """Initialize the loader.
 
@@ -87,6 +91,8 @@ class OpenDataLoaderPDFLoader(BaseLoader):
                 (Values: "off", "embedded" (Base64), "external" (file references))
             image_format: Output format for extracted images.
                 (Values: "png", "jpeg". Default: "png")
+            split_pages: If True, split output into separate Documents per page.
+                Automatically sets the appropriate page separator for the format.
         """
         if isinstance(file_path, (str, Path)):
             self.file_paths = [str(file_path)]
@@ -106,6 +112,95 @@ class OpenDataLoaderPDFLoader(BaseLoader):
         self.html_page_separator = html_page_separator
         self.image_output = image_output
         self.image_format = image_format
+        self.split_pages = split_pages
+
+    # Internal separator used for page splitting (unique enough to avoid collisions)
+    _PAGE_SPLIT_SEPARATOR = "\n<<<ODL_PAGE_BREAK_%page-number%>>>\n"
+
+    def _get_page_separator(self) -> Optional[str]:
+        """Get the page separator based on format and split_pages setting."""
+        if self.split_pages:
+            return self._PAGE_SPLIT_SEPARATOR
+        if self.format == "text":
+            return self.text_page_separator
+        elif self.format == "markdown":
+            return self.markdown_page_separator
+        elif self.format == "html":
+            return self.html_page_separator
+        return None
+
+    def _split_into_pages(self, content: str, source_name: str) -> Iterator[Document]:
+        """Split content by page separator and yield Documents for each page."""
+        # Build regex pattern to match separator with any page number
+        # e.g., "\n<<<ODL_PAGE_BREAK_2>>>\n"
+        separator_pattern = re.escape(self._PAGE_SPLIT_SEPARATOR).replace(
+            re.escape("%page-number%"), r"(\d+)"
+        )
+
+        # Split content using the separator pattern
+        parts = re.split(separator_pattern, content)
+
+        # parts will be: [page1_content, page_num, page2_content, page_num, ...]
+        # First part is page 1, then alternating between page numbers and content
+        page_num = 1
+        for i, part in enumerate(parts):
+            if i % 2 == 0:  # Content parts (even indices)
+                page_content = part.strip()
+                if page_content:  # Skip empty pages
+                    yield Document(
+                        page_content=page_content,
+                        metadata={
+                            "source": source_name,
+                            "format": self.format,
+                            "page": page_num,
+                        },
+                    )
+                page_num += 1
+            # Odd indices are the captured page numbers, we use our own counter
+
+    def _extract_text_from_element(self, element: Dict[str, Any]) -> str:
+        """Recursively extract text content from a JSON element."""
+        texts = []
+
+        # Get direct content
+        if "content" in element:
+            texts.append(element["content"])
+
+        # Process nested elements
+        for key in ["kids", "rows", "cells", "list items"]:
+            if key in element:
+                for child in element[key]:
+                    texts.append(self._extract_text_from_element(child))
+
+        return "\n".join(filter(None, texts))
+
+    def _split_json_into_pages(
+        self, data: Dict[str, Any], source_name: str
+    ) -> Iterator[Document]:
+        """Split JSON content by page number and yield Documents for each page."""
+        # Group elements by page number
+        pages: Dict[int, List[Dict[str, Any]]] = defaultdict(list)
+
+        for element in data.get("kids", []):
+            page_num = element.get("page number", 1)
+            pages[page_num].append(element)
+
+        # Yield a Document for each page
+        for page_num in sorted(pages.keys()):
+            page_elements = pages[page_num]
+            # Extract text from all elements on this page
+            page_texts = [self._extract_text_from_element(el) for el in page_elements]
+            page_content = "\n".join(filter(None, page_texts))
+
+            if page_content.strip():
+                yield Document(
+                    page_content=page_content,
+                    metadata={
+                        "source": source_name,
+                        "format": self.format,
+                        "page": page_num,
+                    },
+                )
 
     def lazy_load(self) -> Iterator[Document]:
         """Sequentially process each PDF file and yield Documents."""
@@ -123,6 +218,11 @@ class OpenDataLoaderPDFLoader(BaseLoader):
         try:
             output_dir = tempfile.mkdtemp(dir=tempfile.gettempdir())
 
+            # Determine page separators
+            text_sep = self._get_page_separator() if self.format == "text" else self.text_page_separator
+            md_sep = self._get_page_separator() if self.format == "markdown" else self.markdown_page_separator
+            html_sep = self._get_page_separator() if self.format == "html" else self.html_page_separator
+
             opendataloader_pdf.convert(
                 input_path=self.file_paths,
                 output_dir=output_dir,
@@ -135,9 +235,9 @@ class OpenDataLoaderPDFLoader(BaseLoader):
                 use_struct_tree=self.use_struct_tree,
                 table_method=self.table_method,
                 reading_order=self.reading_order,
-                markdown_page_separator=self.markdown_page_separator,
-                text_page_separator=self.text_page_separator,
-                html_page_separator=self.html_page_separator,
+                markdown_page_separator=md_sep,
+                text_page_separator=text_sep,
+                html_page_separator=html_sep,
                 image_output=self.image_output,
                 image_format=self.image_format,
             )
@@ -156,13 +256,25 @@ class OpenDataLoaderPDFLoader(BaseLoader):
             for file in files:
                 with open(file, "r", encoding="utf-8") as f:
                     content = f.read()
-                yield Document(
-                    page_content=content,
-                    metadata={
-                        "source": file.with_suffix(".pdf").name,
-                        "format": self.format,
-                    },
-                )
+
+                source_name = file.with_suffix(".pdf").name
+
+                if self.split_pages:
+                    if self.format == "json":
+                        # Parse JSON and split by page number
+                        data = json.loads(content)
+                        yield from self._split_json_into_pages(data, source_name)
+                    else:
+                        # Split by page separator pattern and yield each page
+                        yield from self._split_into_pages(content, source_name)
+                else:
+                    yield Document(
+                        page_content=content,
+                        metadata={
+                            "source": source_name,
+                            "format": self.format,
+                        },
+                    )
                 try:
                     file.unlink()
                 except Exception as e:
