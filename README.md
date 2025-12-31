@@ -212,5 +212,6 @@ MIT License. See [LICENSE](LICENSE) for details.
 ## Links
 
 - [OpenDataLoader PDF](https://github.com/opendataloader-project/opendataloader-pdf) — Core PDF parsing engine
-- [LangChain Documentation](https://python.langchain.com/docs/integrations/document_loaders/opendataloader_pdf/) — Official integration docs
+- [LangChain Python Docs](https://python.langchain.com/docs/integrations/document_loaders/opendataloader_pdf/) — Python API reference
+- [LangChain Integration Guide](https://docs.langchain.com/oss/python/integrations/document_loaders/opendataloader_pdf) — Integration documentation
 - [PyPI Package](https://pypi.org/project/langchain-opendataloader-pdf/)
