@@ -298,7 +298,9 @@ class TestOpenDataLoaderPDFLoaderSplitPages:
         """Test that _split_into_pages correctly splits content."""
         loader = OpenDataLoaderPDFLoader(file_path="test.pdf", split_pages=True)
 
+        # Separator appears BEFORE each page with that page's number
         content = (
+            "\n<<<ODL_PAGE_BREAK_1>>>\n"
             "Page 1 content"
             "\n<<<ODL_PAGE_BREAK_2>>>\n"
             "Page 2 content"
@@ -321,7 +323,7 @@ class TestOpenDataLoaderPDFLoaderSplitPages:
         """Test that single page content returns one document."""
         loader = OpenDataLoaderPDFLoader(file_path="test.pdf", split_pages=True)
 
-        content = "Single page content only"
+        content = "\n<<<ODL_PAGE_BREAK_1>>>\nSingle page content only"
 
         docs = list(loader._split_into_pages(content, "test.pdf"))
 
@@ -334,6 +336,7 @@ class TestOpenDataLoaderPDFLoaderSplitPages:
         loader = OpenDataLoaderPDFLoader(file_path="test.pdf", split_pages=True)
 
         content = (
+            "\n<<<ODL_PAGE_BREAK_1>>>\n"
             "Page 1 content"
             "\n<<<ODL_PAGE_BREAK_2>>>\n"
             "   "  # Empty/whitespace page
@@ -388,8 +391,9 @@ class TestOpenDataLoaderPDFLoaderSplitPages:
         mock_mkdtemp.return_value = "/tmp/test"
         mock_odl.convert = MagicMock()
 
-        # Mock file content with page separators
+        # Mock file content with page separators (separator before each page)
         mock_file_content = (
+            "\n<<<ODL_PAGE_BREAK_1>>>\n"
             "First page content"
             "\n<<<ODL_PAGE_BREAK_2>>>\n"
             "Second page content"

@@ -131,8 +131,9 @@ class OpenDataLoaderPDFLoader(BaseLoader):
 
     def _split_into_pages(self, content: str, source_name: str) -> Iterator[Document]:
         """Split content by page separator and yield Documents for each page."""
-        # Build regex pattern to match separator with any page number
-        # e.g., "\n<<<ODL_PAGE_BREAK_2>>>\n"
+        # Build regex pattern to match separator with page number
+        # The separator appears BEFORE each page's content with that page's number
+        # e.g., "\n<<<ODL_PAGE_BREAK_1>>>\nPage 1 content\n<<<ODL_PAGE_BREAK_2>>>\nPage 2 content"
         separator_pattern = re.escape(self._PAGE_SPLIT_SEPARATOR).replace(
             re.escape("%page-number%"), r"(\d+)"
         )
@@ -140,12 +141,26 @@ class OpenDataLoaderPDFLoader(BaseLoader):
         # Split content using the separator pattern
         parts = re.split(separator_pattern, content)
 
-        # parts will be: [page1_content, page_num, page2_content, page_num, ...]
-        # First part is page 1, then alternating between page numbers and content
-        page_num = 1
-        for i, part in enumerate(parts):
-            if i % 2 == 0:  # Content parts (even indices)
-                page_content = part.strip()
+        # parts: [before_first_sep, page_num_1, content_1, page_num_2, content_2, ...]
+        # First part (index 0) is content before first separator (usually empty)
+        # Then alternating: page_num (odd indices), content (even indices > 0)
+
+        # Handle content before first separator (if any, treat as page 1)
+        if parts[0].strip():
+            yield Document(
+                page_content=parts[0].strip(),
+                metadata={
+                    "source": source_name,
+                    "format": self.format,
+                    "page": 1,
+                },
+            )
+
+        # Process remaining parts: (page_num, content) pairs
+        for i in range(1, len(parts), 2):
+            page_num = int(parts[i])
+            if i + 1 < len(parts):
+                page_content = parts[i + 1].strip()
                 if page_content:  # Skip empty pages
                     yield Document(
                         page_content=page_content,
@@ -155,8 +170,6 @@ class OpenDataLoaderPDFLoader(BaseLoader):
                             "page": page_num,
                         },
                     )
-                page_num += 1
-            # Odd indices are the captured page numbers, we use our own counter
 
     def _extract_text_from_element(self, element: Dict[str, Any]) -> str:
         """Recursively extract text content from a JSON element."""
