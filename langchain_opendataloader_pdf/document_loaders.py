@@ -1,7 +1,7 @@
 import logging
 import tempfile
 from pathlib import Path
-from typing import Any, Iterator, List, Union, Optional
+from typing import Iterator, List, Union, Optional
 from langchain_core.document_loaders.base import BaseLoader
 from langchain_core.documents import Document
 import opendataloader_pdf
@@ -46,16 +46,47 @@ class OpenDataLoaderPDFLoader(BaseLoader):
         format: str = "text",
         quiet: bool = False,
         content_safety_off: Optional[List[str]] = None,
-        **kwargs: Any,
+        password: Optional[str] = None,
+        keep_line_breaks: bool = False,
+        replace_invalid_chars: Optional[str] = None,
+        use_struct_tree: bool = False,
+        table_method: Optional[str] = None,
+        reading_order: Optional[str] = None,
+        markdown_page_separator: Optional[str] = None,
+        text_page_separator: Optional[str] = None,
+        html_page_separator: Optional[str] = None,
+        image_output: Optional[str] = None,
+        image_format: Optional[str] = None,
     ):
         """Initialize the loader.
 
         Args:
             file_path: A path or list of paths to the PDF file(s).
-            format: The output format. Default: "text" (Valid options are: "json", "text", "html", "markdown")
+            format: The output format. Default: "text"
+                (Valid options are: "json", "text", "html", "markdown")
             quiet: Suppress CLI logging output. Default: False
-            content_safety_off: List of content safety filters to disable. Default: None
-            **kwargs: Additional keyword arguments to pass to the opendataloader_pdf.
+            content_safety_off: List of content safety filters to disable.
+                (Values: "all", "hidden-text", "off-page", "tiny", "hidden-ocg")
+            password: Password for encrypted PDF files.
+            keep_line_breaks: Preserve original line breaks in extracted text.
+            replace_invalid_chars: Replacement character for invalid/unrecognized
+                characters. Default: space
+            use_struct_tree: Use PDF structure tree (tagged PDF) for reading order
+                and semantic structure.
+            table_method: Table detection method.
+                (Values: "default" (border-based), "cluster" (border + cluster))
+            reading_order: Reading order algorithm.
+                (Values: "off", "xycut". Default: "xycut")
+            markdown_page_separator: Separator between pages in Markdown output.
+                Use %page-number% for page numbers.
+            text_page_separator: Separator between pages in text output.
+                Use %page-number% for page numbers.
+            html_page_separator: Separator between pages in HTML output.
+                Use %page-number% for page numbers.
+            image_output: Image output mode.
+                (Values: "off", "embedded" (Base64), "external" (file references))
+            image_format: Output format for extracted images.
+                (Values: "png", "jpeg". Default: "png")
         """
         if isinstance(file_path, (str, Path)):
             self.file_paths = [str(file_path)]
@@ -64,7 +95,17 @@ class OpenDataLoaderPDFLoader(BaseLoader):
         self.format = format.lower()
         self.quiet = quiet
         self.content_safety_off = content_safety_off
-        self.extra_args = kwargs
+        self.password = password
+        self.keep_line_breaks = keep_line_breaks
+        self.replace_invalid_chars = replace_invalid_chars
+        self.use_struct_tree = use_struct_tree
+        self.table_method = table_method
+        self.reading_order = reading_order
+        self.markdown_page_separator = markdown_page_separator
+        self.text_page_separator = text_page_separator
+        self.html_page_separator = html_page_separator
+        self.image_output = image_output
+        self.image_format = image_format
 
     def lazy_load(self) -> Iterator[Document]:
         """Sequentially process each PDF file and yield Documents."""
@@ -88,7 +129,17 @@ class OpenDataLoaderPDFLoader(BaseLoader):
                 format=[self.format],
                 quiet=self.quiet,
                 content_safety_off=self.content_safety_off,
-                **self.extra_args,
+                password=self.password,
+                keep_line_breaks=self.keep_line_breaks,
+                replace_invalid_chars=self.replace_invalid_chars,
+                use_struct_tree=self.use_struct_tree,
+                table_method=self.table_method,
+                reading_order=self.reading_order,
+                markdown_page_separator=self.markdown_page_separator,
+                text_page_separator=self.text_page_separator,
+                html_page_separator=self.html_page_separator,
+                image_output=self.image_output,
+                image_format=self.image_format,
             )
 
             if self.format == "json":
