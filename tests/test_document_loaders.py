@@ -81,7 +81,7 @@ class TestOpenDataLoaderPDFLoaderInit:
         assert loader.use_struct_tree is False
         assert loader.table_method is None
         assert loader.reading_order is None
-        assert loader.image_output is None
+        assert loader.image_output == "off"
         assert loader.image_format is None
 
 

@@ -55,7 +55,7 @@ class OpenDataLoaderPDFLoader(BaseLoader):
         use_struct_tree: bool = False,
         table_method: Optional[str] = None,
         reading_order: Optional[str] = None,
-        image_output: Optional[str] = None,
+        image_output: str = "off",
         image_format: Optional[str] = None,
         split_pages: bool = True,
     ):
@@ -78,7 +78,7 @@ class OpenDataLoaderPDFLoader(BaseLoader):
                 (Values: "default" (border-based), "cluster" (border + cluster))
             reading_order: Reading order algorithm.
                 (Values: "off", "xycut". Default: "xycut")
-            image_output: Image output mode.
+            image_output: Image output mode. Default: "off" (no images extracted).
                 (Values: "off", "embedded" (Base64), "external" (file references))
             image_format: Output format for extracted images.
                 (Values: "png", "jpeg". Default: "png")

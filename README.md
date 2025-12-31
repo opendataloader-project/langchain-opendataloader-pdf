@@ -84,18 +84,6 @@ loader = OpenDataLoaderPDFLoader(
 )
 ```
 
-### Page Separators
-
-Add separators between pages for chunking:
-
-```python
-loader = OpenDataLoaderPDFLoader(
-    file_path="multipage.pdf",
-    format="text",
-    text_page_separator="\n\n--- Page %page-number% ---\n\n"
-)
-```
-
 ### Table Detection
 
 For documents with complex tables:
@@ -120,14 +108,10 @@ loader = OpenDataLoaderPDFLoader(
 ### Image Handling
 
 ```python
-# Exclude images (faster, smaller output)
-loader = OpenDataLoaderPDFLoader(
-    file_path="doc.pdf",
-    format="markdown",
-    image_output="off"
-)
+# Images are excluded by default (image_output="off")
+# This is optimal for text-based RAG pipelines
 
-# Embed images as Base64 (self-contained output)
+# Embed images as Base64 (for multimodal RAG)
 loader = OpenDataLoaderPDFLoader(
     file_path="doc.pdf",
     format="markdown",
@@ -182,17 +166,15 @@ results = vectorstore.similarity_search("What is the main topic?")
 |-----------|------|---------|-------------|
 | `file_path` | `str \| List[str]` | — | **(Required)** PDF file path(s) or directories |
 | `format` | `str` | `"text"` | Output format: `"text"`, `"markdown"`, `"json"`, `"html"` |
+| `split_pages` | `bool` | `True` | Split into separate Documents per page |
 | `quiet` | `bool` | `False` | Suppress console logging |
 | `password` | `str` | `None` | Password for encrypted PDFs |
 | `use_struct_tree` | `bool` | `False` | Use PDF structure tree (tagged PDFs) |
-| `table_method` | `str` | `None` | `"default"` (border-based) or `"cluster"` (border + clustering) |
-| `reading_order` | `str` | `"xycut"` | Reading order: `"xycut"` or `"off"` |
+| `table_method` | `str` | `"default"` | `"default"` (border-based) or `"cluster"` (border + clustering) |
+| `reading_order` | `str` | `"xycut"` | `"xycut"` or `"off"` |
 | `keep_line_breaks` | `bool` | `False` | Preserve original line breaks |
-| `text_page_separator` | `str` | `None` | Separator between pages (text format) |
-| `markdown_page_separator` | `str` | `None` | Separator between pages (markdown format) |
-| `html_page_separator` | `str` | `None` | Separator between pages (html format) |
-| `image_output` | `str` | `None` | `"off"`, `"embedded"` (Base64), or `"external"` |
-| `image_format` | `str` | `None` | `"png"` or `"jpeg"` |
+| `image_output` | `str` | `"off"` | `"off"`, `"embedded"` (Base64), or `"external"` |
+| `image_format` | `str` | `"png"` | `"png"` or `"jpeg"` |
 | `content_safety_off` | `List[str]` | `None` | Disable safety filters: `"hidden-text"`, `"off-page"`, `"tiny"`, `"hidden-ocg"`, `"all"` |
 | `replace_invalid_chars` | `str` | `None` | Replacement for invalid characters |
 
@@ -202,7 +184,7 @@ Each returned `Document` includes metadata:
 
 ```python
 doc.metadata
-# {'source': 'document.pdf', 'format': 'text'}
+# {'source': 'document.pdf', 'format': 'text', 'page': 1}
 ```
 
 ## License
