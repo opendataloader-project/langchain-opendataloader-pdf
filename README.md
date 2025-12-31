@@ -36,19 +36,14 @@ for doc in documents:
 | `content_safety_off`     | `Optional[List[str]]` | No         | `None`       | List of content safety filters to disable (e.g. `"all"`, `"hidden-text"`, `"off-page"`, `"tiny"`, `"hidden-ocg"`). |
 
 ## Development workflow
-This repository uses [Poetry](https://python-poetry.org/) for dependency management. If you don't have Poetry installed, please follow the [official installation guide](https://python-poetry.org/#installation).
+This repository uses [uv](https://docs.astral.sh/uv/) for dependency management.
 
-Once Poetry is installed, you can install the project dependencies:
 ```bash
-poetry install
+uv sync
 ```
 
-Common tasks are mirrored in the `Makefile` so you can run them with or without Poetry.
-
-
-
 ## Publishing notes
-Run `poetry check` and `poetry build` to verify the package metadata before uploading to PyPI. Confirm that `langchain_opendataloader_pdf/py.typed` is present in the wheel so consumers benefit from typing information.
+Run `uv build` to verify the package metadata before uploading to PyPI. Confirm that `langchain_opendataloader_pdf/py.typed` is present in the wheel so consumers benefit from typing information.
 
 ## License
 Distributed under the MIT License. See `LICENSE` for full text.

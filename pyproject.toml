@@ -1,15 +1,24 @@
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "langchain-opendataloader-pdf"
 version = "0.0.0"
 description = "A LangChain integration for OpenDataLoader PDF"
+authors = [{ name = "opendataloader-project", email = "open.dataloader@hancom.com" }]
+requires-python = ">=3.10,<4.0"
 readme = "README.md"
 license = "MIT"
-authors = [{ name = "opendataloader-project", email = "open.dataloader@hancom.com" }]
-keywords = ["langchain", "dataloader", "pdf", "document loader", "ai", "document-parsing", "document"]
+keywords = [
+    "langchain",
+    "dataloader",
+    "pdf",
+    "document loader",
+    "ai",
+    "document-parsing",
+    "document",
+]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -22,7 +31,6 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
 ]
-requires-python = ">=3.10,<4.0"
 dependencies = [
     "langchain-core>=1.0,<2.0",
     "opendataloader-pdf>=1.3.0",
