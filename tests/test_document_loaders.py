@@ -66,17 +66,6 @@ class TestOpenDataLoaderPDFLoaderInit:
         loader = OpenDataLoaderPDFLoader(file_path="test.pdf", reading_order="off")
         assert loader.reading_order == "off"
 
-    def test_init_with_page_separators(self):
-        loader = OpenDataLoaderPDFLoader(
-            file_path="test.pdf",
-            markdown_page_separator="---",
-            text_page_separator="\n\n",
-            html_page_separator="<hr/>",
-        )
-        assert loader.markdown_page_separator == "---"
-        assert loader.text_page_separator == "\n\n"
-        assert loader.html_page_separator == "<hr/>"
-
     def test_init_with_image_options(self):
         loader = OpenDataLoaderPDFLoader(
             file_path="test.pdf", image_output="embedded", image_format="jpeg"
@@ -92,9 +81,6 @@ class TestOpenDataLoaderPDFLoaderInit:
         assert loader.use_struct_tree is False
         assert loader.table_method is None
         assert loader.reading_order is None
-        assert loader.markdown_page_separator is None
-        assert loader.text_page_separator is None
-        assert loader.html_page_separator is None
         assert loader.image_output is None
         assert loader.image_format is None
 
@@ -181,26 +167,6 @@ class TestOpenDataLoaderPDFLoaderConvertCall:
 
     @patch("langchain_opendataloader_pdf.document_loaders.opendataloader_pdf")
     @patch("langchain_opendataloader_pdf.document_loaders.tempfile.mkdtemp")
-    def test_convert_passes_page_separators(self, mock_mkdtemp, mock_odl):
-        mock_mkdtemp.return_value = "/tmp/test"
-        mock_odl.convert = MagicMock()
-
-        loader = OpenDataLoaderPDFLoader(
-            file_path="test.pdf",
-            markdown_page_separator="---",
-            text_page_separator="\n\n",
-            html_page_separator="<hr/>",
-            split_pages=False,
-        )
-        list(loader.lazy_load())
-
-        call_kwargs = mock_odl.convert.call_args[1]
-        assert call_kwargs["markdown_page_separator"] == "---"
-        assert call_kwargs["text_page_separator"] == "\n\n"
-        assert call_kwargs["html_page_separator"] == "<hr/>"
-
-    @patch("langchain_opendataloader_pdf.document_loaders.opendataloader_pdf")
-    @patch("langchain_opendataloader_pdf.document_loaders.tempfile.mkdtemp")
     def test_convert_passes_image_options(self, mock_mkdtemp, mock_odl):
         mock_mkdtemp.return_value = "/tmp/test"
         mock_odl.convert = MagicMock()
@@ -245,7 +211,6 @@ class TestOpenDataLoaderPDFLoaderConvertCall:
             use_struct_tree=True,
             table_method="cluster",
             reading_order="xycut",
-            markdown_page_separator="---",
             image_output="embedded",
             image_format="jpeg",
             split_pages=False,
@@ -263,7 +228,6 @@ class TestOpenDataLoaderPDFLoaderConvertCall:
         assert call_kwargs["use_struct_tree"] is True
         assert call_kwargs["table_method"] == "cluster"
         assert call_kwargs["reading_order"] == "xycut"
-        assert call_kwargs["markdown_page_separator"] == "---"
         assert call_kwargs["image_output"] == "embedded"
         assert call_kwargs["image_format"] == "jpeg"
 

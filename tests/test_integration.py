@@ -156,18 +156,6 @@ class TestIntegrationWithOptions:
         documents = loader.load()
         assert len(documents) == 1
 
-    def test_load_with_page_separator(self, sample_pdf: Path):
-        """Test loading with page separator."""
-        loader = OpenDataLoaderPDFLoader(
-            file_path=str(sample_pdf),
-            format="text",
-            quiet=True,
-            text_page_separator="--- Page %page-number% ---",
-            split_pages=False,
-        )
-        documents = loader.load()
-        assert len(documents) == 1
-
     def test_load_with_image_options(self, sample_pdf: Path):
         """Test loading with image options."""
         loader = OpenDataLoaderPDFLoader(

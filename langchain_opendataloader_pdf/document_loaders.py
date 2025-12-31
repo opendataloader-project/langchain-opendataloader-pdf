@@ -55,9 +55,6 @@ class OpenDataLoaderPDFLoader(BaseLoader):
         use_struct_tree: bool = False,
         table_method: Optional[str] = None,
         reading_order: Optional[str] = None,
-        markdown_page_separator: Optional[str] = None,
-        text_page_separator: Optional[str] = None,
-        html_page_separator: Optional[str] = None,
         image_output: Optional[str] = None,
         image_format: Optional[str] = None,
         split_pages: bool = True,
@@ -81,12 +78,6 @@ class OpenDataLoaderPDFLoader(BaseLoader):
                 (Values: "default" (border-based), "cluster" (border + cluster))
             reading_order: Reading order algorithm.
                 (Values: "off", "xycut". Default: "xycut")
-            markdown_page_separator: Separator between pages in Markdown output.
-                Use %page-number% for page numbers.
-            text_page_separator: Separator between pages in text output.
-                Use %page-number% for page numbers.
-            html_page_separator: Separator between pages in HTML output.
-                Use %page-number% for page numbers.
             image_output: Image output mode.
                 (Values: "off", "embedded" (Base64), "external" (file references))
             image_format: Output format for extracted images.
@@ -107,9 +98,6 @@ class OpenDataLoaderPDFLoader(BaseLoader):
         self.use_struct_tree = use_struct_tree
         self.table_method = table_method
         self.reading_order = reading_order
-        self.markdown_page_separator = markdown_page_separator
-        self.text_page_separator = text_page_separator
-        self.html_page_separator = html_page_separator
         self.image_output = image_output
         self.image_format = image_format
         self.split_pages = split_pages
@@ -118,15 +106,9 @@ class OpenDataLoaderPDFLoader(BaseLoader):
     _PAGE_SPLIT_SEPARATOR = "\n<<<ODL_PAGE_BREAK_%page-number%>>>\n"
 
     def _get_page_separator(self) -> Optional[str]:
-        """Get the page separator based on format and split_pages setting."""
+        """Get the page separator for split_pages mode."""
         if self.split_pages:
             return self._PAGE_SPLIT_SEPARATOR
-        if self.format == "text":
-            return self.text_page_separator
-        elif self.format == "markdown":
-            return self.markdown_page_separator
-        elif self.format == "html":
-            return self.html_page_separator
         return None
 
     def _split_into_pages(self, content: str, source_name: str) -> Iterator[Document]:
@@ -231,10 +213,8 @@ class OpenDataLoaderPDFLoader(BaseLoader):
         try:
             output_dir = tempfile.mkdtemp(dir=tempfile.gettempdir())
 
-            # Determine page separators
-            text_sep = self._get_page_separator() if self.format == "text" else self.text_page_separator
-            md_sep = self._get_page_separator() if self.format == "markdown" else self.markdown_page_separator
-            html_sep = self._get_page_separator() if self.format == "html" else self.html_page_separator
+            # Get page separator for split_pages mode
+            page_sep = self._get_page_separator()
 
             opendataloader_pdf.convert(
                 input_path=self.file_paths,
@@ -248,9 +228,9 @@ class OpenDataLoaderPDFLoader(BaseLoader):
                 use_struct_tree=self.use_struct_tree,
                 table_method=self.table_method,
                 reading_order=self.reading_order,
-                markdown_page_separator=md_sep,
-                text_page_separator=text_sep,
-                html_page_separator=html_sep,
+                markdown_page_separator=page_sep,
+                text_page_separator=page_sep,
+                html_page_separator=page_sep,
                 image_output=self.image_output,
                 image_format=self.image_format,
             )
