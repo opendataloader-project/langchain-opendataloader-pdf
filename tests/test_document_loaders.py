@@ -73,6 +73,12 @@ class TestOpenDataLoaderPDFLoaderInit:
         assert loader.image_output == "embedded"
         assert loader.image_format == "jpeg"
 
+    def test_init_with_image_dir(self):
+        loader = OpenDataLoaderPDFLoader(
+            file_path="test.pdf", image_output="external", image_dir="./images"
+        )
+        assert loader.image_dir == "./images"
+
     def test_init_defaults_for_new_options(self):
         loader = OpenDataLoaderPDFLoader(file_path="test.pdf")
         assert loader.password is None
@@ -83,6 +89,7 @@ class TestOpenDataLoaderPDFLoaderInit:
         assert loader.reading_order is None
         assert loader.image_output == "off"
         assert loader.image_format is None
+        assert loader.image_dir is None
 
 
 class TestOpenDataLoaderPDFLoaderConvertCall:
@@ -182,6 +189,33 @@ class TestOpenDataLoaderPDFLoaderConvertCall:
 
     @patch("langchain_opendataloader_pdf.document_loaders.opendataloader_pdf")
     @patch("langchain_opendataloader_pdf.document_loaders.tempfile.mkdtemp")
+    def test_convert_passes_image_dir(self, mock_mkdtemp, mock_odl):
+        mock_mkdtemp.return_value = "/tmp/test"
+        mock_odl.convert = MagicMock()
+
+        loader = OpenDataLoaderPDFLoader(
+            file_path="test.pdf", image_output="external", image_dir="./images"
+        )
+        list(loader.lazy_load())
+
+        call_kwargs = mock_odl.convert.call_args[1]
+        assert call_kwargs["image_output"] == "external"
+        assert call_kwargs["image_dir"] == "./images"
+
+    @patch("langchain_opendataloader_pdf.document_loaders.opendataloader_pdf")
+    @patch("langchain_opendataloader_pdf.document_loaders.tempfile.mkdtemp")
+    def test_convert_image_dir_none_by_default(self, mock_mkdtemp, mock_odl):
+        mock_mkdtemp.return_value = "/tmp/test"
+        mock_odl.convert = MagicMock()
+
+        loader = OpenDataLoaderPDFLoader(file_path="test.pdf")
+        list(loader.lazy_load())
+
+        call_kwargs = mock_odl.convert.call_args[1]
+        assert call_kwargs["image_dir"] is None
+
+    @patch("langchain_opendataloader_pdf.document_loaders.opendataloader_pdf")
+    @patch("langchain_opendataloader_pdf.document_loaders.tempfile.mkdtemp")
     def test_convert_passes_replace_invalid_chars(self, mock_mkdtemp, mock_odl):
         mock_mkdtemp.return_value = "/tmp/test"
         mock_odl.convert = MagicMock()
@@ -211,8 +245,9 @@ class TestOpenDataLoaderPDFLoaderConvertCall:
             use_struct_tree=True,
             table_method="cluster",
             reading_order="xycut",
-            image_output="embedded",
+            image_output="external",
             image_format="jpeg",
+            image_dir="./images",
             split_pages=False,
         )
         list(loader.lazy_load())
@@ -228,8 +263,9 @@ class TestOpenDataLoaderPDFLoaderConvertCall:
         assert call_kwargs["use_struct_tree"] is True
         assert call_kwargs["table_method"] == "cluster"
         assert call_kwargs["reading_order"] == "xycut"
-        assert call_kwargs["image_output"] == "embedded"
+        assert call_kwargs["image_output"] == "external"
         assert call_kwargs["image_format"] == "jpeg"
+        assert call_kwargs["image_dir"] == "./images"
 
 
 class TestOpenDataLoaderPDFLoaderValidation:
