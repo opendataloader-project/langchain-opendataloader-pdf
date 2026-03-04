@@ -57,6 +57,7 @@ class OpenDataLoaderPDFLoader(BaseLoader):
         reading_order: Optional[str] = None,
         image_output: str = "off",
         image_format: Optional[str] = None,
+        image_dir: Optional[str] = None,
         split_pages: bool = True,
     ):
         """Initialize the loader.
@@ -82,6 +83,9 @@ class OpenDataLoaderPDFLoader(BaseLoader):
                 (Values: "off", "embedded" (Base64), "external" (file references))
             image_format: Output format for extracted images.
                 (Values: "png", "jpeg". Default: "png")
+            image_dir: Directory where extracted images are saved when using
+                image_output="external". If not set, images are saved alongside
+                the output files in a temporary directory.
             split_pages: If True, split output into separate Documents per page.
                 Automatically sets the appropriate page separator for the format.
         """
@@ -100,6 +104,7 @@ class OpenDataLoaderPDFLoader(BaseLoader):
         self.reading_order = reading_order
         self.image_output = image_output
         self.image_format = image_format
+        self.image_dir = image_dir
         self.split_pages = split_pages
 
     # Internal separator used for page splitting (unique enough to avoid collisions)
@@ -233,6 +238,7 @@ class OpenDataLoaderPDFLoader(BaseLoader):
                 html_page_separator=page_sep,
                 image_output=self.image_output,
                 image_format=self.image_format,
+                image_dir=self.image_dir,
             )
 
             if self.format == "json":

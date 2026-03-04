@@ -118,6 +118,15 @@ loader = OpenDataLoaderPDFLoader(
     image_output="embedded",
     image_format="jpeg"  # or "png"
 )
+
+# Save images as files to a local directory
+loader = OpenDataLoaderPDFLoader(
+    file_path="doc.pdf",
+    format="markdown",
+    image_output="external",
+    image_dir="./images",   # images saved here; defaults to temp dir if not set
+    image_format="png"
+)
 ```
 
 ### Suppress Logging
@@ -175,6 +184,7 @@ results = vectorstore.similarity_search("What is the main topic?")
 | `keep_line_breaks` | `bool` | `False` | Preserve original line breaks |
 | `image_output` | `str` | `"off"` | `"off"`, `"embedded"` (Base64), or `"external"` |
 | `image_format` | `str` | `"png"` | `"png"` or `"jpeg"` |
+| `image_dir` | `str` | `None` | Directory for extracted images when using `image_output="external"` |
 | `content_safety_off` | `List[str]` | `None` | Disable safety filters: `"hidden-text"`, `"off-page"`, `"tiny"`, `"hidden-ocg"`, `"all"` |
 | `replace_invalid_chars` | `str` | `None` | Replacement for invalid characters |
 
