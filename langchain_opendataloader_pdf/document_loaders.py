@@ -58,6 +58,9 @@ class OpenDataLoaderPDFLoader(BaseLoader):
         image_output: str = "off",
         image_format: Optional[str] = None,
         image_dir: Optional[str] = None,
+        sanitize: bool = False,
+        pages: Optional[str] = None,
+        include_header_footer: bool = False,
         split_pages: bool = True,
     ):
         """Initialize the loader.
@@ -86,6 +89,10 @@ class OpenDataLoaderPDFLoader(BaseLoader):
             image_dir: Directory where extracted images are saved when using
                 image_output="external". If not set, images are saved alongside
                 the output files in a temporary directory.
+            sanitize: Enable sensitive data sanitization. Replaces emails,
+                phone numbers, IPs, credit cards, and URLs with placeholders.
+            pages: Pages to extract (e.g., "1,3,5-7"). Default: all pages.
+            include_header_footer: Include page headers and footers in output.
             split_pages: If True, split output into separate Documents per page.
                 Automatically sets the appropriate page separator for the format.
         """
@@ -105,6 +112,9 @@ class OpenDataLoaderPDFLoader(BaseLoader):
         self.image_output = image_output
         self.image_format = image_format
         self.image_dir = image_dir
+        self.sanitize = sanitize
+        self.pages = pages
+        self.include_header_footer = include_header_footer
         self.split_pages = split_pages
 
     # Internal separator used for page splitting (unique enough to avoid collisions)
@@ -239,6 +249,9 @@ class OpenDataLoaderPDFLoader(BaseLoader):
                 image_output=self.image_output,
                 image_format=self.image_format,
                 image_dir=self.image_dir,
+                sanitize=self.sanitize,
+                pages=self.pages,
+                include_header_footer=self.include_header_footer,
             )
 
             if self.format == "json":

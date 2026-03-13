@@ -178,6 +178,44 @@ class TestIntegrationWithOptions:
         documents = loader.load()
         assert len(documents) == 1
 
+    def test_load_with_sanitize(self, sample_pdf: Path):
+        """Test loading with sanitize option."""
+        loader = OpenDataLoaderPDFLoader(
+            file_path=str(sample_pdf),
+            format="text",
+            quiet=True,
+            sanitize=True,
+        )
+        documents = loader.load()
+        assert len(documents) == 1
+
+    def test_load_with_pages(self, multi_page_pdf: Path):
+        """Test loading with pages option to extract specific pages."""
+        if not multi_page_pdf.exists():
+            pytest.skip(f"Multi-page PDF not found: {multi_page_pdf}")
+
+        loader = OpenDataLoaderPDFLoader(
+            file_path=str(multi_page_pdf),
+            format="text",
+            quiet=True,
+            pages="1",
+            split_pages=True,
+        )
+        documents = loader.load()
+        assert len(documents) == 1
+        assert documents[0].metadata["page"] == 1
+
+    def test_load_with_include_header_footer(self, sample_pdf: Path):
+        """Test loading with include_header_footer option."""
+        loader = OpenDataLoaderPDFLoader(
+            file_path=str(sample_pdf),
+            format="text",
+            quiet=True,
+            include_header_footer=True,
+        )
+        documents = loader.load()
+        assert len(documents) == 1
+
     def test_load_multiple_files(self, sample_pdfs: list[Path]):
         """Test loading multiple PDF files."""
         if len(sample_pdfs) < 2:
