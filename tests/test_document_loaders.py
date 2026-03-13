@@ -79,6 +79,20 @@ class TestOpenDataLoaderPDFLoaderInit:
         )
         assert loader.image_dir == "./images"
 
+    def test_init_with_sanitize(self):
+        loader = OpenDataLoaderPDFLoader(file_path="test.pdf", sanitize=True)
+        assert loader.sanitize is True
+
+    def test_init_with_pages(self):
+        loader = OpenDataLoaderPDFLoader(file_path="test.pdf", pages="1,3,5-7")
+        assert loader.pages == "1,3,5-7"
+
+    def test_init_with_include_header_footer(self):
+        loader = OpenDataLoaderPDFLoader(
+            file_path="test.pdf", include_header_footer=True
+        )
+        assert loader.include_header_footer is True
+
     def test_init_defaults_for_new_options(self):
         loader = OpenDataLoaderPDFLoader(file_path="test.pdf")
         assert loader.password is None
@@ -90,6 +104,9 @@ class TestOpenDataLoaderPDFLoaderInit:
         assert loader.image_output == "off"
         assert loader.image_format is None
         assert loader.image_dir is None
+        assert loader.sanitize is False
+        assert loader.pages is None
+        assert loader.include_header_footer is False
 
 
 class TestOpenDataLoaderPDFLoaderConvertCall:
@@ -230,6 +247,44 @@ class TestOpenDataLoaderPDFLoaderConvertCall:
 
     @patch("langchain_opendataloader_pdf.document_loaders.opendataloader_pdf")
     @patch("langchain_opendataloader_pdf.document_loaders.tempfile.mkdtemp")
+    def test_convert_passes_sanitize(self, mock_mkdtemp, mock_odl):
+        mock_mkdtemp.return_value = "/tmp/test"
+        mock_odl.convert = MagicMock()
+
+        loader = OpenDataLoaderPDFLoader(file_path="test.pdf", sanitize=True)
+        list(loader.lazy_load())
+
+        call_kwargs = mock_odl.convert.call_args[1]
+        assert call_kwargs["sanitize"] is True
+
+    @patch("langchain_opendataloader_pdf.document_loaders.opendataloader_pdf")
+    @patch("langchain_opendataloader_pdf.document_loaders.tempfile.mkdtemp")
+    def test_convert_passes_pages(self, mock_mkdtemp, mock_odl):
+        mock_mkdtemp.return_value = "/tmp/test"
+        mock_odl.convert = MagicMock()
+
+        loader = OpenDataLoaderPDFLoader(file_path="test.pdf", pages="1,3")
+        list(loader.lazy_load())
+
+        call_kwargs = mock_odl.convert.call_args[1]
+        assert call_kwargs["pages"] == "1,3"
+
+    @patch("langchain_opendataloader_pdf.document_loaders.opendataloader_pdf")
+    @patch("langchain_opendataloader_pdf.document_loaders.tempfile.mkdtemp")
+    def test_convert_passes_include_header_footer(self, mock_mkdtemp, mock_odl):
+        mock_mkdtemp.return_value = "/tmp/test"
+        mock_odl.convert = MagicMock()
+
+        loader = OpenDataLoaderPDFLoader(
+            file_path="test.pdf", include_header_footer=True
+        )
+        list(loader.lazy_load())
+
+        call_kwargs = mock_odl.convert.call_args[1]
+        assert call_kwargs["include_header_footer"] is True
+
+    @patch("langchain_opendataloader_pdf.document_loaders.opendataloader_pdf")
+    @patch("langchain_opendataloader_pdf.document_loaders.tempfile.mkdtemp")
     def test_convert_passes_all_options_together(self, mock_mkdtemp, mock_odl):
         mock_mkdtemp.return_value = "/tmp/test"
         mock_odl.convert = MagicMock()
@@ -248,6 +303,9 @@ class TestOpenDataLoaderPDFLoaderConvertCall:
             image_output="external",
             image_format="jpeg",
             image_dir="./images",
+            sanitize=True,
+            pages="1,3,5-7",
+            include_header_footer=True,
             split_pages=False,
         )
         list(loader.lazy_load())
@@ -266,6 +324,9 @@ class TestOpenDataLoaderPDFLoaderConvertCall:
         assert call_kwargs["image_output"] == "external"
         assert call_kwargs["image_format"] == "jpeg"
         assert call_kwargs["image_dir"] == "./images"
+        assert call_kwargs["sanitize"] is True
+        assert call_kwargs["pages"] == "1,3,5-7"
+        assert call_kwargs["include_header_footer"] is True
 
 
 class TestOpenDataLoaderPDFLoaderValidation:

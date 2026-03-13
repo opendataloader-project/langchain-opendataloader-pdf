@@ -241,7 +241,7 @@ wheels = [
 
 [[package]]
 name = "langchain-opendataloader-pdf"
-version = "0.0.0"
+version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "langchain-core" },
@@ -256,7 +256,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "langchain-core", specifier = ">=1.0,<2.0" },
-    { name = "opendataloader-pdf", specifier = ">=1.5.1" },
+    { name = "opendataloader-pdf", specifier = ">=2.0.0" },
 ]
 
 [package.metadata.requires-dev]
@@ -283,10 +283,10 @@ wheels = [
 
 [[package]]
 name = "opendataloader-pdf"
-version = "1.5.1"
+version = "2.0.0"
 source = { registry = "https://pypi.org/simple" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/67/f8/4087dfb3c78eec521946955856abd087a7b394588a6762a5df4e7f66d9aa/opendataloader_pdf-1.5.1-py3-none-any.whl", hash = "sha256:198724bfad10286423a44553d99bafb094dc0763c29a21d8e27f85cfe486d0f6", size = 20916081, upload-time = "2025-12-22T09:35:28.495Z" },
+    { url = "https://files.pythonhosted.org/packages/3d/5f/c97ee55c1c78b96cc65172106123a6dd27e87d8d062c4e3134dc400c3531/opendataloader_pdf-2.0.0-py3-none-any.whl", hash = "sha256:18093fa87a3089abdba14043c187f85c6a4af48c4597710de32d90e95666313e", size = 22271532, upload-time = "2026-03-11T05:13:30.854Z" },
 ]
 
 [[package]]
