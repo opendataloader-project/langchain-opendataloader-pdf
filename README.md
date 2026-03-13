@@ -96,6 +96,25 @@ loader = OpenDataLoaderPDFLoader(
 )
 ```
 
+### Sensitive Data Sanitization
+
+```python
+# Replace emails, phone numbers, IPs, credit cards, URLs with placeholders
+loader = OpenDataLoaderPDFLoader(
+    file_path="document.pdf",
+    sanitize=True
+)
+```
+
+### Extract Specific Pages
+
+```python
+loader = OpenDataLoaderPDFLoader(
+    file_path="document.pdf",
+    pages="1,3,5-10"
+)
+```
+
 ### Password-Protected PDFs
 
 ```python
@@ -185,6 +204,9 @@ results = vectorstore.similarity_search("What is the main topic?")
 | `image_output` | `str` | `"off"` | `"off"`, `"embedded"` (Base64), or `"external"` |
 | `image_format` | `str` | `"png"` | `"png"` or `"jpeg"` |
 | `image_dir` | `str` | `None` | Directory for extracted images when using `image_output="external"` |
+| `sanitize` | `bool` | `False` | Sanitize sensitive data (emails, phone numbers, IPs, credit cards, URLs) |
+| `pages` | `str` | `None` | Pages to extract (e.g., `"1,3,5-7"`). Default: all pages |
+| `include_header_footer` | `bool` | `False` | Include page headers and footers in output |
 | `content_safety_off` | `List[str]` | `None` | Disable safety filters: `"hidden-text"`, `"off-page"`, `"tiny"`, `"hidden-ocg"`, `"all"` |
 | `replace_invalid_chars` | `str` | `None` | Replacement for invalid characters |
 
