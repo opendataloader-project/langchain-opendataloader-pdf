@@ -115,6 +115,16 @@ loader = OpenDataLoaderPDFLoader(
 )
 ```
 
+### Include Headers and Footers
+
+```python
+# By default, headers and footers are excluded for cleaner RAG output
+loader = OpenDataLoaderPDFLoader(
+    file_path="document.pdf",
+    include_header_footer=True
+)
+```
+
 ### Password-Protected PDFs
 
 ```python

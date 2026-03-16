@@ -51,7 +51,9 @@ def sample_pdf() -> Path:
 
 @pytest.fixture
 def multi_page_pdf() -> Path:
-    """Return the path to a multi-page PDF file."""
+    """Return the path to a multi-page PDF file. Skips test if not found."""
+    if not MULTI_PAGE_PDF.exists():
+        pytest.skip(f"Multi-page PDF not found: {MULTI_PAGE_PDF}")
     return MULTI_PAGE_PDF
 
 
@@ -191,8 +193,6 @@ class TestIntegrationWithOptions:
 
     def test_load_with_pages(self, multi_page_pdf: Path):
         """Test loading with pages option to extract specific pages."""
-        if not multi_page_pdf.exists():
-            pytest.skip(f"Multi-page PDF not found: {multi_page_pdf}")
 
         loader = OpenDataLoaderPDFLoader(
             file_path=str(multi_page_pdf),
@@ -272,8 +272,6 @@ class TestIntegrationSplitPages:
 
     def test_split_pages_text_format(self, multi_page_pdf: Path):
         """Test split_pages with text format on multi-page PDF."""
-        if not multi_page_pdf.exists():
-            pytest.skip(f"Multi-page PDF not found: {multi_page_pdf}")
 
         loader = OpenDataLoaderPDFLoader(
             file_path=str(multi_page_pdf),
@@ -293,8 +291,6 @@ class TestIntegrationSplitPages:
 
     def test_split_pages_markdown_format(self, multi_page_pdf: Path):
         """Test split_pages with markdown format on multi-page PDF."""
-        if not multi_page_pdf.exists():
-            pytest.skip(f"Multi-page PDF not found: {multi_page_pdf}")
 
         loader = OpenDataLoaderPDFLoader(
             file_path=str(multi_page_pdf),
@@ -311,8 +307,6 @@ class TestIntegrationSplitPages:
 
     def test_split_pages_json_format(self, multi_page_pdf: Path):
         """Test split_pages with JSON format extracts text per page."""
-        if not multi_page_pdf.exists():
-            pytest.skip(f"Multi-page PDF not found: {multi_page_pdf}")
 
         loader = OpenDataLoaderPDFLoader(
             file_path=str(multi_page_pdf),
@@ -331,8 +325,6 @@ class TestIntegrationSplitPages:
 
     def test_split_pages_html_format(self, multi_page_pdf: Path):
         """Test split_pages with HTML format on multi-page PDF."""
-        if not multi_page_pdf.exists():
-            pytest.skip(f"Multi-page PDF not found: {multi_page_pdf}")
 
         loader = OpenDataLoaderPDFLoader(
             file_path=str(multi_page_pdf),
@@ -349,8 +341,6 @@ class TestIntegrationSplitPages:
 
     def test_split_pages_page_numbers_sequential(self, multi_page_pdf: Path):
         """Test that page numbers are sequential on multi-page PDF."""
-        if not multi_page_pdf.exists():
-            pytest.skip(f"Multi-page PDF not found: {multi_page_pdf}")
 
         loader = OpenDataLoaderPDFLoader(
             file_path=str(multi_page_pdf),
@@ -368,8 +358,6 @@ class TestIntegrationSplitPages:
 
     def test_split_pages_false_returns_single_document(self, multi_page_pdf: Path):
         """Test that split_pages=False returns a single document per file."""
-        if not multi_page_pdf.exists():
-            pytest.skip(f"Multi-page PDF not found: {multi_page_pdf}")
 
         loader = OpenDataLoaderPDFLoader(
             file_path=str(multi_page_pdf),
