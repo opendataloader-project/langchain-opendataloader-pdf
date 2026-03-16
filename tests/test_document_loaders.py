@@ -1,5 +1,6 @@
 """Unit tests for OpenDataLoaderPDFLoader."""
 
+import json
 from unittest.mock import patch, MagicMock
 import pytest
 
@@ -492,8 +493,12 @@ class TestOpenDataLoaderPDFLoaderSplitPages:
         assert docs[2].page_content == "Third page content"
         assert docs[2].metadata["page"] == 3
 
-    def test_split_json_into_pages_basic(self):
-        """Test that _split_json_into_pages correctly splits JSON content by page."""
+    def test_split_json_into_pages_returns_valid_json(self):
+        """Test that _split_json_into_pages returns valid JSON strings as page_content.
+
+        Regression test for issue #248: format='json' should return JSON in
+        page_content, not extracted plain text.
+        """
         loader = OpenDataLoaderPDFLoader(
             file_path="test.pdf", format="json", split_pages=True
         )
@@ -512,12 +517,26 @@ class TestOpenDataLoaderPDFLoaderSplitPages:
         docs = list(loader._split_json_into_pages(json_data, "test.pdf"))
 
         assert len(docs) == 3
-        assert "Page 1 text" in docs[0].page_content
-        assert "Page 1 heading" in docs[0].page_content
+        # page_content must be valid JSON
+        for doc in docs:
+            parsed = json.loads(doc.page_content)
+            assert isinstance(parsed, dict)
+        # Page 1 should contain both elements
+        page1 = json.loads(docs[0].page_content)
+        assert page1["page number"] == 1
+        assert len(page1["kids"]) == 2
+        assert page1["kids"][0]["content"] == "Page 1 text"
+        assert page1["kids"][1]["content"] == "Page 1 heading"
         assert docs[0].metadata["page"] == 1
-        assert docs[1].page_content == "Page 2 text"
+        # Page 2
+        page2 = json.loads(docs[1].page_content)
+        assert page2["page number"] == 2
+        assert page2["kids"][0]["content"] == "Page 2 text"
         assert docs[1].metadata["page"] == 2
-        assert docs[2].page_content == "Page 3 text"
+        # Page 3
+        page3 = json.loads(docs[2].page_content)
+        assert page3["page number"] == 3
+        assert page3["kids"][0]["content"] == "Page 3 text"
         assert docs[2].metadata["page"] == 3
 
     def test_split_json_into_pages_with_nested_content(self):
@@ -551,11 +570,13 @@ class TestOpenDataLoaderPDFLoaderSplitPages:
         docs = list(loader._split_json_into_pages(json_data, "test.pdf"))
 
         assert len(docs) == 2
-        assert "Intro text" in docs[0].page_content
-        assert "Cell 1" in docs[0].page_content
-        assert "Cell 2" in docs[0].page_content
+        page1 = json.loads(docs[0].page_content)
+        assert len(page1["kids"]) == 2
+        assert page1["kids"][0]["content"] == "Intro text"
+        assert "rows" in page1["kids"][1]  # table structure preserved
         assert docs[0].metadata["page"] == 1
-        assert docs[1].page_content == "Page 2 text"
+        page2 = json.loads(docs[1].page_content)
+        assert page2["kids"][0]["content"] == "Page 2 text"
         assert docs[1].metadata["page"] == 2
 
     def test_split_json_into_pages_with_list_items(self):
@@ -583,6 +604,29 @@ class TestOpenDataLoaderPDFLoaderSplitPages:
         docs = list(loader._split_json_into_pages(json_data, "test.pdf"))
 
         assert len(docs) == 1
-        assert "Item 1" in docs[0].page_content
-        assert "Item 2" in docs[0].page_content
-        assert "Item 3" in docs[0].page_content
+        page1 = json.loads(docs[0].page_content)
+        assert page1["page number"] == 1
+        assert len(page1["kids"]) == 1
+        assert len(page1["kids"][0]["list items"]) == 3
+
+    def test_split_json_into_pages_missing_page_number(self):
+        """Test that elements without 'page number' default to page 1."""
+        loader = OpenDataLoaderPDFLoader(
+            file_path="test.pdf", format="json", split_pages=True
+        )
+
+        json_data = {
+            "kids": [
+                {"type": "paragraph", "content": "No page number"},
+                {"type": "paragraph", "page number": 2, "content": "Page 2"},
+            ],
+        }
+
+        docs = list(loader._split_json_into_pages(json_data, "test.pdf"))
+
+        assert len(docs) == 2
+        page1 = json.loads(docs[0].page_content)
+        assert page1["page number"] == 1
+        assert page1["kids"][0]["content"] == "No page number"
+        page2 = json.loads(docs[1].page_content)
+        assert page2["page number"] == 2
