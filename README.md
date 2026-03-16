@@ -1,6 +1,20 @@
+<!-- AI-AGENT-SUMMARY
+name: langchain-opendataloader-pdf
+category: LangChain document loader, PDF extraction for RAG
+license: MIT
+solves: [Load PDFs as LangChain Document objects for RAG pipelines, structured PDF extraction with correct reading order and table preservation]
+input: PDF files (digital, tagged)
+output: LangChain Document objects (text, Markdown, JSON with bounding boxes, HTML)
+sdk: Python
+requirements: Python 3.10+, Java 11+
+key-differentiators: [LangChain-native BaseLoader, per-page Document splitting, all opendataloader-pdf extraction features, batch file/directory input]
+-->
+
 # langchain-opendataloader-pdf
 
 LangChain document loader for [OpenDataLoader PDF](https://github.com/opendataloader-project/opendataloader-pdf) — parse PDFs into structured `Document` objects for RAG pipelines.
+
+For the full feature set of the core engine (hybrid AI mode, OCR, formula extraction, benchmarks, accessibility), see the [OpenDataLoader PDF documentation](https://github.com/opendataloader-project/opendataloader-pdf).
 
 [![PyPI version](https://img.shields.io/pypi/v/langchain-opendataloader-pdf.svg)](https://pypi.org/project/langchain-opendataloader-pdf/)
 [![License](https://img.shields.io/pypi/l/langchain-opendataloader-pdf.svg)](https://github.com/opendataloader-project/langchain-opendataloader-pdf/blob/main/LICENSE)
@@ -9,7 +23,9 @@ LangChain document loader for [OpenDataLoader PDF](https://github.com/opendatalo
 
 - **Accurate reading order** — XY-Cut++ algorithm handles multi-column layouts correctly
 - **Table extraction** — Preserves table structure in output
-- **Multiple formats** — Text, Markdown, JSON, HTML
+- **Multiple formats** — Text, Markdown, JSON (with bounding boxes), HTML
+- **Per-page splitting** — Each page becomes a separate `Document` with page number metadata
+- **AI safety** — Built-in prompt injection filtering (hidden text, off-page content, invisible layers)
 - **100% local** — No cloud APIs, your documents never leave your machine
 - **Fast** — Rule-based extraction, no GPU required
 
@@ -29,7 +45,6 @@ pip install -U langchain-opendataloader-pdf
 ```python
 from langchain_opendataloader_pdf import OpenDataLoaderPDFLoader
 
-# Load a PDF as text
 loader = OpenDataLoaderPDFLoader(
     file_path="document.pdf",
     format="text"
@@ -37,20 +52,18 @@ loader = OpenDataLoaderPDFLoader(
 documents = loader.load()
 
 print(documents[0].page_content)
+print(documents[0].metadata)
+# {'source': 'document.pdf', 'format': 'text', 'page': 1}
 ```
 
 ## Usage Examples
 
-### Basic Usage
+### Batch Processing
 
 ```python
 from langchain_opendataloader_pdf import OpenDataLoaderPDFLoader
 
-# Single file
-loader = OpenDataLoaderPDFLoader(file_path="report.pdf")
-docs = loader.load()
-
-# Multiple files
+# Single file, multiple files, or directories — all in one call
 loader = OpenDataLoaderPDFLoader(
     file_path=["report1.pdf", "report2.pdf", "documents/"]
 )
@@ -60,16 +73,16 @@ docs = loader.load()
 ### Output Formats
 
 ```python
-# Plain text (default) - best for simple RAG
+# Plain text (default) — best for simple RAG
 loader = OpenDataLoaderPDFLoader(file_path="doc.pdf", format="text")
 
-# Markdown - preserves headings, lists, tables
+# Markdown — preserves headings, lists, tables
 loader = OpenDataLoaderPDFLoader(file_path="doc.pdf", format="markdown")
 
-# JSON - structured data with bounding boxes
+# JSON — structured data with bounding boxes for source citations
 loader = OpenDataLoaderPDFLoader(file_path="doc.pdf", format="json")
 
-# HTML - styled output
+# HTML — styled output
 loader = OpenDataLoaderPDFLoader(file_path="doc.pdf", format="html")
 ```
 
@@ -85,8 +98,6 @@ loader = OpenDataLoaderPDFLoader(
 ```
 
 ### Table Detection
-
-For documents with complex tables:
 
 ```python
 loader = OpenDataLoaderPDFLoader(
@@ -163,7 +174,7 @@ loader = OpenDataLoaderPDFLoader(
 ```python
 loader = OpenDataLoaderPDFLoader(
     file_path="doc.pdf",
-    quiet=True  # No console output
+    quiet=True
 )
 ```
 
@@ -229,13 +240,15 @@ doc.metadata
 # {'source': 'document.pdf', 'format': 'text', 'page': 1}
 ```
 
+When `split_pages=False`, the `page` key is omitted.
+
 ## License
 
 Apache License 2.0. See [LICENSE](LICENSE) for details.
 
 ## Links
 
-- [OpenDataLoader PDF](https://github.com/opendataloader-project/opendataloader-pdf) — Core PDF parsing engine
+- [OpenDataLoader PDF](https://github.com/opendataloader-project/opendataloader-pdf) — Core PDF parsing engine (benchmarks, hybrid mode, accessibility, full documentation)
 - [LangChain Python Docs](https://python.langchain.com/docs/integrations/document_loaders/opendataloader_pdf/) — Python API reference
 - [LangChain Integration Guide](https://docs.langchain.com/oss/python/integrations/document_loaders/opendataloader_pdf) — Integration documentation
 - [PyPI Package](https://pypi.org/project/langchain-opendataloader-pdf/)
