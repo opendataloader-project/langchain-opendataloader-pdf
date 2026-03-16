@@ -311,4 +311,6 @@ class OpenDataLoaderPDFLoader(BaseLoader):
                     logger.error(f"Error deleting temp file '{file}': {e}")
 
         except Exception as e:
+            if self.hybrid:
+                raise
             logger.error(f"Error: {e}")

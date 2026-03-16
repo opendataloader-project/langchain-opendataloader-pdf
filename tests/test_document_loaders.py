@@ -820,3 +820,34 @@ class TestOpenDataLoaderPDFLoaderHybridMetadata:
 
         assert len(docs) == 1
         assert docs[0].metadata["hybrid"] == "docling-fast"
+
+
+class TestOpenDataLoaderPDFLoaderHybridErrors:
+    """Test error behavior when hybrid mode is active."""
+
+    @patch("langchain_opendataloader_pdf.document_loaders.opendataloader_pdf")
+    @patch("langchain_opendataloader_pdf.document_loaders.tempfile.mkdtemp")
+    def test_hybrid_error_reraise(self, mock_mkdtemp, mock_odl):
+        mock_mkdtemp.return_value = "/tmp/test"
+        mock_odl.convert = MagicMock(
+            side_effect=RuntimeError("Hybrid backend unreachable")
+        )
+
+        loader = OpenDataLoaderPDFLoader(
+            file_path="test.pdf", hybrid="docling-fast"
+        )
+        with pytest.raises(RuntimeError, match="Hybrid backend unreachable"):
+            list(loader.lazy_load())
+
+    @patch("langchain_opendataloader_pdf.document_loaders.opendataloader_pdf")
+    @patch("langchain_opendataloader_pdf.document_loaders.tempfile.mkdtemp")
+    def test_non_hybrid_error_swallowed(self, mock_mkdtemp, mock_odl):
+        mock_mkdtemp.return_value = "/tmp/test"
+        mock_odl.convert = MagicMock(
+            side_effect=RuntimeError("Some error")
+        )
+
+        loader = OpenDataLoaderPDFLoader(file_path="test.pdf")
+        # Should NOT raise — existing silent behavior
+        docs = list(loader.lazy_load())
+        assert docs == []
