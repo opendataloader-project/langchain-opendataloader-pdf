@@ -73,9 +73,23 @@ When `self.hybrid` is set (not None), add `"hybrid": self.hybrid` to Document me
 
 No client-side validation of hybrid values. The core engine already validates and raises errors for invalid combinations. This keeps the wrapper thin.
 
-### 5. Error Behavior
+### 5. Error Behavior — Hybrid Failures Must Be Explicit
 
-The existing `lazy_load()` catches all exceptions with `except Exception` and logs them — no re-raise. This means when hybrid backend fails with `fallback=False`, `convert()` raises an exception, but `lazy_load()` swallows it and yields zero documents. This is **existing behavior** and not changed in this spec. Tests must expect zero documents, not raised exceptions.
+The existing `lazy_load()` catches all exceptions with `except Exception` and silently logs them. **This behavior is changed for hybrid mode.** When `self.hybrid` is set, exceptions from `convert()` must re-raise so users get clear feedback about backend failures.
+
+Implementation: in the `except Exception` block, check `if self.hybrid:` and re-raise instead of swallowing.
+
+```python
+except Exception as e:
+    if self.hybrid:
+        raise
+    logger.error(f"Error: {e}")
+```
+
+This ensures:
+- **hybrid enabled + backend unreachable + fallback=False** → exception raised to user with clear error message
+- **hybrid enabled + backend unreachable + fallback=True** → core engine handles fallback internally, no exception
+- **hybrid disabled (default)** → existing silent behavior preserved (no breaking change)
 
 ---
 
@@ -94,6 +108,8 @@ The existing `lazy_load()` catches all exceptions with `except Exception` and lo
 | `test_metadata_no_hybrid_when_off` | Document metadata has no `hybrid` key when None |
 | `test_split_pages_metadata_includes_hybrid` | Per-page Documents include hybrid in metadata |
 | `test_split_json_pages_metadata_includes_hybrid` | JSON split Documents include hybrid in metadata |
+| `test_hybrid_error_reraise` | When hybrid set and convert() raises, exception propagates to caller |
+| `test_non_hybrid_error_swallowed` | When hybrid not set and convert() raises, error logged silently (existing behavior) |
 
 ### Integration Tests (test_integration.py) — requires Java 11+ only (NO hybrid server)
 
@@ -102,7 +118,7 @@ These tests validate hybrid parameter passthrough and fallback behavior using on
 | Test | Description | Skip Condition |
 |------|-------------|----------------|
 | `test_hybrid_fallback_on_bad_url` | fallback=True with unreachable URL → Java result (documents returned) | No Java |
-| `test_hybrid_no_fallback_on_bad_url` | fallback=False with unreachable URL → zero documents (error swallowed by lazy_load) | No Java |
+| `test_hybrid_no_fallback_on_bad_url` | fallback=False with unreachable URL → exception raised with clear error message | No Java |
 
 ### E2E Tests (test_e2e_hybrid.py) — requires Java 11+ AND running hybrid server
 
@@ -120,7 +136,7 @@ These tests validate actual hybrid extraction end-to-end with a real backend ser
 | 4 | `test_split_pages_hybrid` | Multi-page PDF | Per-page Documents, correct page metadata |
 | 5 | `test_all_formats` | Same PDF → text, markdown, json, html | All 4 formats produce valid output |
 | 6 | `test_fallback_bad_url` | Invalid URL + fallback=True | Java fallback returns valid Documents |
-| 7 | `test_no_fallback_bad_url` | Invalid URL + fallback=False | Zero documents returned (error swallowed by lazy_load) |
+| 7 | `test_no_fallback_bad_url` | Invalid URL + fallback=False | Exception raised with clear error message |
 | 8 | `test_timeout_short` | timeout=1ms | Timeout behavior confirmed |
 
 **Fixtures**:
@@ -153,7 +169,7 @@ def multi_page_pdf():
 | File | Change |
 |------|--------|
 | `langchain_opendataloader_pdf/document_loaders.py` | Add 5 params to `__init__`, forward in `convert()`, extend metadata |
-| `tests/test_document_loaders.py` | Add 9 unit tests |
+| `tests/test_document_loaders.py` | Add 11 unit tests |
 | `tests/test_integration.py` | Add 2 integration tests (fallback scenarios, Java-only) |
 | `tests/test_e2e_hybrid.py` | New file, 8 E2E tests |
 | `README.md` | Add hybrid usage example (see below) |
