@@ -94,6 +94,29 @@ class TestOpenDataLoaderPDFLoaderInit:
         )
         assert loader.include_header_footer is True
 
+    def test_init_hybrid_defaults(self):
+        loader = OpenDataLoaderPDFLoader(file_path="test.pdf")
+        assert loader.hybrid is None
+        assert loader.hybrid_mode is None
+        assert loader.hybrid_url is None
+        assert loader.hybrid_timeout is None
+        assert loader.hybrid_fallback is False
+
+    def test_init_hybrid_custom_values(self):
+        loader = OpenDataLoaderPDFLoader(
+            file_path="test.pdf",
+            hybrid="docling-fast",
+            hybrid_mode="full",
+            hybrid_url="http://my-server:5002",
+            hybrid_timeout="60000",
+            hybrid_fallback=True,
+        )
+        assert loader.hybrid == "docling-fast"
+        assert loader.hybrid_mode == "full"
+        assert loader.hybrid_url == "http://my-server:5002"
+        assert loader.hybrid_timeout == "60000"
+        assert loader.hybrid_fallback is True
+
     def test_init_defaults_for_new_options(self):
         loader = OpenDataLoaderPDFLoader(file_path="test.pdf")
         assert loader.password is None
@@ -283,6 +306,88 @@ class TestOpenDataLoaderPDFLoaderConvertCall:
 
         call_kwargs = mock_odl.convert.call_args[1]
         assert call_kwargs["include_header_footer"] is True
+
+    @patch("langchain_opendataloader_pdf.document_loaders.opendataloader_pdf")
+    @patch("langchain_opendataloader_pdf.document_loaders.tempfile.mkdtemp")
+    def test_convert_passes_hybrid_params(self, mock_mkdtemp, mock_odl):
+        mock_mkdtemp.return_value = "/tmp/test"
+        mock_odl.convert = MagicMock()
+
+        loader = OpenDataLoaderPDFLoader(
+            file_path="test.pdf",
+            hybrid="docling-fast",
+            hybrid_mode="auto",
+            hybrid_url="http://localhost:5002",
+            hybrid_timeout="60000",
+            hybrid_fallback=True,
+        )
+        list(loader.lazy_load())
+
+        call_kwargs = mock_odl.convert.call_args[1]
+        assert call_kwargs["hybrid"] == "docling-fast"
+        assert call_kwargs["hybrid_mode"] == "auto"
+        assert call_kwargs["hybrid_url"] == "http://localhost:5002"
+        assert call_kwargs["hybrid_timeout"] == "60000"
+        assert call_kwargs["hybrid_fallback"] is True
+
+    @patch("langchain_opendataloader_pdf.document_loaders.opendataloader_pdf")
+    @patch("langchain_opendataloader_pdf.document_loaders.tempfile.mkdtemp")
+    def test_convert_hybrid_none_passthrough(self, mock_mkdtemp, mock_odl):
+        mock_mkdtemp.return_value = "/tmp/test"
+        mock_odl.convert = MagicMock()
+
+        loader = OpenDataLoaderPDFLoader(file_path="test.pdf")
+        list(loader.lazy_load())
+
+        call_kwargs = mock_odl.convert.call_args[1]
+        assert call_kwargs["hybrid"] is None
+        assert call_kwargs["hybrid_mode"] is None
+        assert call_kwargs["hybrid_url"] is None
+        assert call_kwargs["hybrid_timeout"] is None
+        assert call_kwargs["hybrid_fallback"] is False
+
+    @patch("langchain_opendataloader_pdf.document_loaders.opendataloader_pdf")
+    @patch("langchain_opendataloader_pdf.document_loaders.tempfile.mkdtemp")
+    def test_convert_passes_all_options_with_hybrid(self, mock_mkdtemp, mock_odl):
+        mock_mkdtemp.return_value = "/tmp/test"
+        mock_odl.convert = MagicMock()
+
+        loader = OpenDataLoaderPDFLoader(
+            file_path=["a.pdf", "b.pdf"],
+            format="markdown",
+            quiet=True,
+            password="secret",
+            content_safety_off=["hidden-text"],
+            keep_line_breaks=True,
+            replace_invalid_chars="?",
+            use_struct_tree=True,
+            table_method="cluster",
+            reading_order="xycut",
+            image_output="external",
+            image_format="jpeg",
+            image_dir="./images",
+            sanitize=True,
+            pages="1,3,5-7",
+            include_header_footer=True,
+            split_pages=False,
+            hybrid="docling-fast",
+            hybrid_mode="full",
+            hybrid_url="http://my-server:5002",
+            hybrid_timeout="60000",
+            hybrid_fallback=True,
+        )
+        list(loader.lazy_load())
+
+        call_kwargs = mock_odl.convert.call_args[1]
+        assert call_kwargs["input_path"] == ["a.pdf", "b.pdf"]
+        assert call_kwargs["format"] == ["markdown"]
+        assert call_kwargs["quiet"] is True
+        assert call_kwargs["sanitize"] is True
+        assert call_kwargs["hybrid"] == "docling-fast"
+        assert call_kwargs["hybrid_mode"] == "full"
+        assert call_kwargs["hybrid_url"] == "http://my-server:5002"
+        assert call_kwargs["hybrid_timeout"] == "60000"
+        assert call_kwargs["hybrid_fallback"] is True
 
     @patch("langchain_opendataloader_pdf.document_loaders.opendataloader_pdf")
     @patch("langchain_opendataloader_pdf.document_loaders.tempfile.mkdtemp")
@@ -630,3 +735,119 @@ class TestOpenDataLoaderPDFLoaderSplitPages:
         assert page1["kids"][0]["content"] == "No page number"
         page2 = json.loads(docs[1].page_content)
         assert page2["page number"] == 2
+
+
+class TestOpenDataLoaderPDFLoaderHybridMetadata:
+    """Test hybrid metadata in Document objects."""
+
+    def test_metadata_includes_hybrid(self):
+        loader = OpenDataLoaderPDFLoader(
+            file_path="test.pdf", hybrid="docling-fast", split_pages=True
+        )
+        content = (
+            "\n<<<ODL_PAGE_BREAK_1>>>\n"
+            "Page 1 content"
+        )
+        docs = list(loader._split_into_pages(content, "test.pdf"))
+        assert docs[0].metadata["hybrid"] == "docling-fast"
+
+    def test_metadata_no_hybrid_when_off(self):
+        loader = OpenDataLoaderPDFLoader(file_path="test.pdf", split_pages=True)
+        content = (
+            "\n<<<ODL_PAGE_BREAK_1>>>\n"
+            "Page 1 content"
+        )
+        docs = list(loader._split_into_pages(content, "test.pdf"))
+        assert "hybrid" not in docs[0].metadata
+
+    def test_split_pages_metadata_includes_hybrid(self):
+        loader = OpenDataLoaderPDFLoader(
+            file_path="test.pdf", hybrid="docling-fast", split_pages=True
+        )
+        content = (
+            "\n<<<ODL_PAGE_BREAK_1>>>\n"
+            "Page 1"
+            "\n<<<ODL_PAGE_BREAK_2>>>\n"
+            "Page 2"
+        )
+        docs = list(loader._split_into_pages(content, "test.pdf"))
+        assert all(d.metadata["hybrid"] == "docling-fast" for d in docs)
+
+    def test_split_json_pages_metadata_includes_hybrid(self):
+        loader = OpenDataLoaderPDFLoader(
+            file_path="test.pdf", format="json", hybrid="docling-fast", split_pages=True
+        )
+        json_data = {
+            "kids": [
+                {"type": "paragraph", "page number": 1, "content": "Text"},
+            ]
+        }
+        docs = list(loader._split_json_into_pages(json_data, "test.pdf"))
+        assert docs[0].metadata["hybrid"] == "docling-fast"
+
+    @patch("langchain_opendataloader_pdf.document_loaders.opendataloader_pdf")
+    @patch("langchain_opendataloader_pdf.document_loaders.tempfile.mkdtemp")
+    @patch("builtins.open", create=True)
+    @patch("langchain_opendataloader_pdf.document_loaders.Path")
+    def test_metadata_includes_hybrid_no_split(
+        self, mock_path_class, mock_open, mock_mkdtemp, mock_odl
+    ):
+        """Test hybrid metadata when split_pages=False (direct yield path)."""
+        mock_mkdtemp.return_value = "/tmp/test"
+        mock_odl.convert = MagicMock()
+
+        mock_file_content = "Full document content"
+        mock_file = MagicMock()
+        mock_file.__enter__ = MagicMock(return_value=mock_file)
+        mock_file.__exit__ = MagicMock(return_value=False)
+        mock_file.read.return_value = mock_file_content
+        mock_open.return_value = mock_file
+
+        mock_path_instance = MagicMock()
+        mock_file_path = MagicMock()
+        mock_file_path.with_suffix.return_value.name = "document.pdf"
+        mock_file_path.unlink = MagicMock()
+        mock_path_instance.glob.return_value = [mock_file_path]
+        mock_path_class.return_value = mock_path_instance
+
+        loader = OpenDataLoaderPDFLoader(
+            file_path="document.pdf",
+            format="text",
+            hybrid="docling-fast",
+            split_pages=False,
+        )
+        docs = list(loader.lazy_load())
+
+        assert len(docs) == 1
+        assert docs[0].metadata["hybrid"] == "docling-fast"
+
+
+class TestOpenDataLoaderPDFLoaderHybridErrors:
+    """Test error behavior when hybrid mode is active."""
+
+    @patch("langchain_opendataloader_pdf.document_loaders.opendataloader_pdf")
+    @patch("langchain_opendataloader_pdf.document_loaders.tempfile.mkdtemp")
+    def test_hybrid_error_reraise(self, mock_mkdtemp, mock_odl):
+        mock_mkdtemp.return_value = "/tmp/test"
+        mock_odl.convert = MagicMock(
+            side_effect=RuntimeError("Hybrid backend unreachable")
+        )
+
+        loader = OpenDataLoaderPDFLoader(
+            file_path="test.pdf", hybrid="docling-fast"
+        )
+        with pytest.raises(RuntimeError, match="Hybrid backend unreachable"):
+            list(loader.lazy_load())
+
+    @patch("langchain_opendataloader_pdf.document_loaders.opendataloader_pdf")
+    @patch("langchain_opendataloader_pdf.document_loaders.tempfile.mkdtemp")
+    def test_non_hybrid_error_swallowed(self, mock_mkdtemp, mock_odl):
+        mock_mkdtemp.return_value = "/tmp/test"
+        mock_odl.convert = MagicMock(
+            side_effect=RuntimeError("Some error")
+        )
+
+        loader = OpenDataLoaderPDFLoader(file_path="test.pdf")
+        # Should NOT raise — existing silent behavior
+        docs = list(loader.lazy_load())
+        assert docs == []

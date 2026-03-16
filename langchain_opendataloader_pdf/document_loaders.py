@@ -62,6 +62,11 @@ class OpenDataLoaderPDFLoader(BaseLoader):
         pages: Optional[str] = None,
         include_header_footer: bool = False,
         split_pages: bool = True,
+        hybrid: Optional[str] = None,
+        hybrid_mode: Optional[str] = None,
+        hybrid_url: Optional[str] = None,
+        hybrid_timeout: Optional[str] = None,
+        hybrid_fallback: bool = False,
     ):
         """Initialize the loader.
 
@@ -95,6 +100,17 @@ class OpenDataLoaderPDFLoader(BaseLoader):
             include_header_footer: Include page headers and footers in output.
             split_pages: If True, split output into separate Documents per page.
                 Automatically sets the appropriate page separator for the format.
+            hybrid: Backend for hybrid AI extraction. None = Java-only (default).
+                Values: "docling-fast". Requires a running hybrid backend server.
+            hybrid_mode: Triage mode when hybrid is enabled. Default: None
+                (core engine uses "auto" internally when not specified).
+                "auto": route only complex pages to backend.
+                "full": route all pages to backend.
+            hybrid_url: Custom backend server URL. Default: http://localhost:5002
+            hybrid_timeout: Backend request timeout in milliseconds (as string).
+                Default: "30000" (30 seconds).
+            hybrid_fallback: Opt-in to Java fallback on backend failure.
+                Default: False.
         """
         if isinstance(file_path, (str, Path)):
             self.file_paths = [str(file_path)]
@@ -116,6 +132,11 @@ class OpenDataLoaderPDFLoader(BaseLoader):
         self.pages = pages
         self.include_header_footer = include_header_footer
         self.split_pages = split_pages
+        self.hybrid = hybrid
+        self.hybrid_mode = hybrid_mode
+        self.hybrid_url = hybrid_url
+        self.hybrid_timeout = hybrid_timeout
+        self.hybrid_fallback = hybrid_fallback
 
     # Internal separator used for page splitting (unique enough to avoid collisions)
     _PAGE_SPLIT_SEPARATOR = "\n<<<ODL_PAGE_BREAK_%page-number%>>>\n"
@@ -150,6 +171,7 @@ class OpenDataLoaderPDFLoader(BaseLoader):
                     "source": source_name,
                     "format": self.format,
                     "page": 1,
+                    **({"hybrid": self.hybrid} if self.hybrid else {}),
                 },
             )
 
@@ -165,6 +187,7 @@ class OpenDataLoaderPDFLoader(BaseLoader):
                             "source": source_name,
                             "format": self.format,
                             "page": page_num,
+                            **({"hybrid": self.hybrid} if self.hybrid else {}),
                         },
                     )
 
@@ -198,6 +221,7 @@ class OpenDataLoaderPDFLoader(BaseLoader):
                     "source": source_name,
                     "format": self.format,
                     "page": page_num,
+                    **({"hybrid": self.hybrid} if self.hybrid else {}),
                 },
             )
 
@@ -241,8 +265,19 @@ class OpenDataLoaderPDFLoader(BaseLoader):
                 sanitize=self.sanitize,
                 pages=self.pages,
                 include_header_footer=self.include_header_footer,
+                hybrid=self.hybrid,
+                hybrid_mode=self.hybrid_mode,
+                hybrid_url=self.hybrid_url,
+                hybrid_timeout=self.hybrid_timeout,
+                hybrid_fallback=self.hybrid_fallback,
             )
+        except Exception as e:
+            if self.hybrid:
+                raise
+            logger.error(f"Error during conversion: {e}")
+            return
 
+        try:
             if self.format == "json":
                 ext = "json"
             elif self.format == "text":
@@ -274,6 +309,7 @@ class OpenDataLoaderPDFLoader(BaseLoader):
                         metadata={
                             "source": source_name,
                             "format": self.format,
+                            **({"hybrid": self.hybrid} if self.hybrid else {}),
                         },
                     )
                 try:
