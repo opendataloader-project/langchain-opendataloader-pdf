@@ -10,6 +10,7 @@ Set ODL_HYBRID_URL environment variable to override the default server URL.
 
 import os
 import subprocess
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -33,6 +34,8 @@ def hybrid_server_available() -> bool:
     try:
         urllib.request.urlopen(HYBRID_URL, timeout=3)
         return True
+    except urllib.error.HTTPError:
+        return True  # Server is up, just returned non-200
     except Exception:
         return False
 

@@ -102,8 +102,9 @@ class OpenDataLoaderPDFLoader(BaseLoader):
                 Automatically sets the appropriate page separator for the format.
             hybrid: Backend for hybrid AI extraction. None = Java-only (default).
                 Values: "docling-fast". Requires a running hybrid backend server.
-            hybrid_mode: Triage mode when hybrid is enabled.
-                "auto" (default): route only complex pages to backend.
+            hybrid_mode: Triage mode when hybrid is enabled. Default: None
+                (core engine uses "auto" internally when not specified).
+                "auto": route only complex pages to backend.
                 "full": route all pages to backend.
             hybrid_url: Custom backend server URL. Default: http://localhost:5002
             hybrid_timeout: Backend request timeout in milliseconds (as string).
@@ -270,7 +271,13 @@ class OpenDataLoaderPDFLoader(BaseLoader):
                 hybrid_timeout=self.hybrid_timeout,
                 hybrid_fallback=self.hybrid_fallback,
             )
+        except Exception as e:
+            if self.hybrid:
+                raise
+            logger.error(f"Error during conversion: {e}")
+            return
 
+        try:
             if self.format == "json":
                 ext = "json"
             elif self.format == "text":
@@ -311,6 +318,4 @@ class OpenDataLoaderPDFLoader(BaseLoader):
                     logger.error(f"Error deleting temp file '{file}': {e}")
 
         except Exception as e:
-            if self.hybrid:
-                raise
             logger.error(f"Error: {e}")
