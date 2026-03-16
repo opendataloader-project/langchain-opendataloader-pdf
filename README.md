@@ -169,6 +169,26 @@ loader = OpenDataLoaderPDFLoader(
 )
 ```
 
+### Hybrid AI Mode
+
+For complex documents (tables, charts, scanned content), hybrid mode routes pages to an AI backend for better accuracy while keeping simple pages on the fast local engine:
+
+```python
+# Requires a running docling-fast server (default: localhost:5002)
+loader = OpenDataLoaderPDFLoader(
+    file_path="complex_report.pdf",
+    format="markdown",
+    hybrid="docling-fast",          # Enable hybrid extraction
+    hybrid_mode="auto",             # Auto-triage: only complex pages go to backend
+    hybrid_url="http://localhost:5002",
+)
+documents = loader.load()
+
+# Document metadata shows which backend was used
+print(documents[0].metadata)
+# {'source': 'complex_report.pdf', 'format': 'markdown', 'page': 1, 'hybrid': 'docling-fast'}
+```
+
 ### Suppress Logging
 
 ```python
@@ -230,6 +250,11 @@ results = vectorstore.similarity_search("What is the main topic?")
 | `include_header_footer` | `bool` | `False` | Include page headers and footers in output |
 | `content_safety_off` | `List[str]` | `None` | Disable safety filters: `"hidden-text"`, `"off-page"`, `"tiny"`, `"hidden-ocg"`, `"all"` |
 | `replace_invalid_chars` | `str` | `None` | Replacement for invalid characters |
+| `hybrid` | `str` | `None` | Hybrid AI backend: `"docling-fast"`. Requires running backend server |
+| `hybrid_mode` | `str` | `None` | `"auto"` (route complex pages) or `"full"` (route all pages) |
+| `hybrid_url` | `str` | `None` | Backend server URL. Default: `http://localhost:5002` |
+| `hybrid_timeout` | `str` | `None` | Backend timeout in ms. Default: `"30000"` |
+| `hybrid_fallback` | `bool` | `False` | Fall back to Java extraction on backend failure |
 
 ## Document Metadata
 
@@ -238,6 +263,9 @@ Each returned `Document` includes metadata:
 ```python
 doc.metadata
 # {'source': 'document.pdf', 'format': 'text', 'page': 1}
+
+# When hybrid mode is active:
+# {'source': 'document.pdf', 'format': 'text', 'page': 1, 'hybrid': 'docling-fast'}
 ```
 
 When `split_pages=False`, the `page` key is omitted.
