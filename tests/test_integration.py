@@ -382,3 +382,34 @@ class TestIntegrationSplitPages:
 
         assert len(documents) == 1
         assert documents[0].metadata["page"] == 1
+
+
+class TestIntegrationHybridFallback:
+    """Test hybrid fallback behavior with real Java engine (no hybrid server needed)."""
+
+    def test_hybrid_fallback_on_bad_url(self, sample_pdf: Path):
+        """fallback=True with unreachable URL should fall back to Java extraction."""
+        loader = OpenDataLoaderPDFLoader(
+            file_path=str(sample_pdf),
+            format="text",
+            quiet=True,
+            hybrid="docling-fast",
+            hybrid_url="http://127.0.0.1:59999",  # unreachable port
+            hybrid_fallback=True,
+        )
+        documents = loader.load()
+        assert len(documents) >= 1
+        assert len(documents[0].page_content) > 0
+
+    def test_hybrid_no_fallback_on_bad_url(self, sample_pdf: Path):
+        """fallback=False with unreachable URL should raise an exception."""
+        loader = OpenDataLoaderPDFLoader(
+            file_path=str(sample_pdf),
+            format="text",
+            quiet=True,
+            hybrid="docling-fast",
+            hybrid_url="http://127.0.0.1:59999",  # unreachable port
+            hybrid_fallback=False,
+        )
+        with pytest.raises(Exception):
+            loader.load()
