@@ -309,6 +309,88 @@ class TestOpenDataLoaderPDFLoaderConvertCall:
 
     @patch("langchain_opendataloader_pdf.document_loaders.opendataloader_pdf")
     @patch("langchain_opendataloader_pdf.document_loaders.tempfile.mkdtemp")
+    def test_convert_passes_hybrid_params(self, mock_mkdtemp, mock_odl):
+        mock_mkdtemp.return_value = "/tmp/test"
+        mock_odl.convert = MagicMock()
+
+        loader = OpenDataLoaderPDFLoader(
+            file_path="test.pdf",
+            hybrid="docling-fast",
+            hybrid_mode="auto",
+            hybrid_url="http://localhost:5002",
+            hybrid_timeout="60000",
+            hybrid_fallback=True,
+        )
+        list(loader.lazy_load())
+
+        call_kwargs = mock_odl.convert.call_args[1]
+        assert call_kwargs["hybrid"] == "docling-fast"
+        assert call_kwargs["hybrid_mode"] == "auto"
+        assert call_kwargs["hybrid_url"] == "http://localhost:5002"
+        assert call_kwargs["hybrid_timeout"] == "60000"
+        assert call_kwargs["hybrid_fallback"] is True
+
+    @patch("langchain_opendataloader_pdf.document_loaders.opendataloader_pdf")
+    @patch("langchain_opendataloader_pdf.document_loaders.tempfile.mkdtemp")
+    def test_convert_hybrid_none_passthrough(self, mock_mkdtemp, mock_odl):
+        mock_mkdtemp.return_value = "/tmp/test"
+        mock_odl.convert = MagicMock()
+
+        loader = OpenDataLoaderPDFLoader(file_path="test.pdf")
+        list(loader.lazy_load())
+
+        call_kwargs = mock_odl.convert.call_args[1]
+        assert call_kwargs["hybrid"] is None
+        assert call_kwargs["hybrid_mode"] is None
+        assert call_kwargs["hybrid_url"] is None
+        assert call_kwargs["hybrid_timeout"] is None
+        assert call_kwargs["hybrid_fallback"] is False
+
+    @patch("langchain_opendataloader_pdf.document_loaders.opendataloader_pdf")
+    @patch("langchain_opendataloader_pdf.document_loaders.tempfile.mkdtemp")
+    def test_convert_passes_all_options_with_hybrid(self, mock_mkdtemp, mock_odl):
+        mock_mkdtemp.return_value = "/tmp/test"
+        mock_odl.convert = MagicMock()
+
+        loader = OpenDataLoaderPDFLoader(
+            file_path=["a.pdf", "b.pdf"],
+            format="markdown",
+            quiet=True,
+            password="secret",
+            content_safety_off=["hidden-text"],
+            keep_line_breaks=True,
+            replace_invalid_chars="?",
+            use_struct_tree=True,
+            table_method="cluster",
+            reading_order="xycut",
+            image_output="external",
+            image_format="jpeg",
+            image_dir="./images",
+            sanitize=True,
+            pages="1,3,5-7",
+            include_header_footer=True,
+            split_pages=False,
+            hybrid="docling-fast",
+            hybrid_mode="full",
+            hybrid_url="http://my-server:5002",
+            hybrid_timeout="60000",
+            hybrid_fallback=True,
+        )
+        list(loader.lazy_load())
+
+        call_kwargs = mock_odl.convert.call_args[1]
+        assert call_kwargs["input_path"] == ["a.pdf", "b.pdf"]
+        assert call_kwargs["format"] == ["markdown"]
+        assert call_kwargs["quiet"] is True
+        assert call_kwargs["sanitize"] is True
+        assert call_kwargs["hybrid"] == "docling-fast"
+        assert call_kwargs["hybrid_mode"] == "full"
+        assert call_kwargs["hybrid_url"] == "http://my-server:5002"
+        assert call_kwargs["hybrid_timeout"] == "60000"
+        assert call_kwargs["hybrid_fallback"] is True
+
+    @patch("langchain_opendataloader_pdf.document_loaders.opendataloader_pdf")
+    @patch("langchain_opendataloader_pdf.document_loaders.tempfile.mkdtemp")
     def test_convert_passes_all_options_together(self, mock_mkdtemp, mock_odl):
         mock_mkdtemp.return_value = "/tmp/test"
         mock_odl.convert = MagicMock()

@@ -261,6 +261,11 @@ class OpenDataLoaderPDFLoader(BaseLoader):
                 sanitize=self.sanitize,
                 pages=self.pages,
                 include_header_footer=self.include_header_footer,
+                hybrid=self.hybrid,
+                hybrid_mode=self.hybrid_mode,
+                hybrid_url=self.hybrid_url,
+                hybrid_timeout=self.hybrid_timeout,
+                hybrid_fallback=self.hybrid_fallback,
             )
 
             if self.format == "json":
