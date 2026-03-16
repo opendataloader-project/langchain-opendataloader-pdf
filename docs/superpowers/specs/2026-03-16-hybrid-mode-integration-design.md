@@ -153,8 +153,8 @@ def multi_page_pdf():
 | File | Change |
 |------|--------|
 | `langchain_opendataloader_pdf/document_loaders.py` | Add 5 params to `__init__`, forward in `convert()`, extend metadata |
-| `tests/test_document_loaders.py` | Add 8 unit tests |
-| `tests/test_integration.py` | Add 7 integration tests |
+| `tests/test_document_loaders.py` | Add 9 unit tests |
+| `tests/test_integration.py` | Add 2 integration tests (fallback scenarios, Java-only) |
 | `tests/test_e2e_hybrid.py` | New file, 8 E2E tests |
 | `README.md` | Add hybrid usage example (see below) |
 
