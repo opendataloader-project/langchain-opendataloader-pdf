@@ -9,7 +9,7 @@ description = "A LangChain integration for OpenDataLoader PDF"
 authors = [{ name = "opendataloader-project", email = "open.dataloader@hancom.com" }]
 requires-python = ">=3.10,<4.0"
 readme = "README.md"
-license = "MIT"
+license = "Apache-2.0"
 keywords = [
     "langchain",
     "dataloader",
