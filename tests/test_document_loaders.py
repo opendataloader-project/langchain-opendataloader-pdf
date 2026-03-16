@@ -735,3 +735,88 @@ class TestOpenDataLoaderPDFLoaderSplitPages:
         assert page1["kids"][0]["content"] == "No page number"
         page2 = json.loads(docs[1].page_content)
         assert page2["page number"] == 2
+
+
+class TestOpenDataLoaderPDFLoaderHybridMetadata:
+    """Test hybrid metadata in Document objects."""
+
+    def test_metadata_includes_hybrid(self):
+        loader = OpenDataLoaderPDFLoader(
+            file_path="test.pdf", hybrid="docling-fast", split_pages=True
+        )
+        content = (
+            "\n<<<ODL_PAGE_BREAK_1>>>\n"
+            "Page 1 content"
+        )
+        docs = list(loader._split_into_pages(content, "test.pdf"))
+        assert docs[0].metadata["hybrid"] == "docling-fast"
+
+    def test_metadata_no_hybrid_when_off(self):
+        loader = OpenDataLoaderPDFLoader(file_path="test.pdf", split_pages=True)
+        content = (
+            "\n<<<ODL_PAGE_BREAK_1>>>\n"
+            "Page 1 content"
+        )
+        docs = list(loader._split_into_pages(content, "test.pdf"))
+        assert "hybrid" not in docs[0].metadata
+
+    def test_split_pages_metadata_includes_hybrid(self):
+        loader = OpenDataLoaderPDFLoader(
+            file_path="test.pdf", hybrid="docling-fast", split_pages=True
+        )
+        content = (
+            "\n<<<ODL_PAGE_BREAK_1>>>\n"
+            "Page 1"
+            "\n<<<ODL_PAGE_BREAK_2>>>\n"
+            "Page 2"
+        )
+        docs = list(loader._split_into_pages(content, "test.pdf"))
+        assert all(d.metadata["hybrid"] == "docling-fast" for d in docs)
+
+    def test_split_json_pages_metadata_includes_hybrid(self):
+        loader = OpenDataLoaderPDFLoader(
+            file_path="test.pdf", format="json", hybrid="docling-fast", split_pages=True
+        )
+        json_data = {
+            "kids": [
+                {"type": "paragraph", "page number": 1, "content": "Text"},
+            ]
+        }
+        docs = list(loader._split_json_into_pages(json_data, "test.pdf"))
+        assert docs[0].metadata["hybrid"] == "docling-fast"
+
+    @patch("langchain_opendataloader_pdf.document_loaders.opendataloader_pdf")
+    @patch("langchain_opendataloader_pdf.document_loaders.tempfile.mkdtemp")
+    @patch("builtins.open", create=True)
+    @patch("langchain_opendataloader_pdf.document_loaders.Path")
+    def test_metadata_includes_hybrid_no_split(
+        self, mock_path_class, mock_open, mock_mkdtemp, mock_odl
+    ):
+        """Test hybrid metadata when split_pages=False (direct yield path)."""
+        mock_mkdtemp.return_value = "/tmp/test"
+        mock_odl.convert = MagicMock()
+
+        mock_file_content = "Full document content"
+        mock_file = MagicMock()
+        mock_file.__enter__ = MagicMock(return_value=mock_file)
+        mock_file.__exit__ = MagicMock(return_value=False)
+        mock_file.read.return_value = mock_file_content
+        mock_open.return_value = mock_file
+
+        mock_path_instance = MagicMock()
+        mock_file_path = MagicMock()
+        mock_file_path.with_suffix.return_value.name = "document.pdf"
+        mock_file_path.unlink = MagicMock()
+        mock_path_instance.glob.return_value = [mock_file_path]
+        mock_path_class.return_value = mock_path_instance
+
+        loader = OpenDataLoaderPDFLoader(
+            file_path="document.pdf",
+            format="text",
+            hybrid="docling-fast",
+            split_pages=False,
+        )
+        docs = list(loader.lazy_load())
+
+        assert len(docs) == 1
+        assert docs[0].metadata["hybrid"] == "docling-fast"

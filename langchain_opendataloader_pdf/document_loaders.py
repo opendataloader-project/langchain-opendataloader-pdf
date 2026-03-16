@@ -170,6 +170,7 @@ class OpenDataLoaderPDFLoader(BaseLoader):
                     "source": source_name,
                     "format": self.format,
                     "page": 1,
+                    **({"hybrid": self.hybrid} if self.hybrid else {}),
                 },
             )
 
@@ -185,6 +186,7 @@ class OpenDataLoaderPDFLoader(BaseLoader):
                             "source": source_name,
                             "format": self.format,
                             "page": page_num,
+                            **({"hybrid": self.hybrid} if self.hybrid else {}),
                         },
                     )
 
@@ -218,6 +220,7 @@ class OpenDataLoaderPDFLoader(BaseLoader):
                     "source": source_name,
                     "format": self.format,
                     "page": page_num,
+                    **({"hybrid": self.hybrid} if self.hybrid else {}),
                 },
             )
 
@@ -299,6 +302,7 @@ class OpenDataLoaderPDFLoader(BaseLoader):
                         metadata={
                             "source": source_name,
                             "format": self.format,
+                            **({"hybrid": self.hybrid} if self.hybrid else {}),
                         },
                     )
                 try:
