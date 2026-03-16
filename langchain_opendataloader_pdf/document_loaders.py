@@ -168,26 +168,14 @@ class OpenDataLoaderPDFLoader(BaseLoader):
                         },
                     )
 
-    def _extract_text_from_element(self, element: Dict[str, Any]) -> str:
-        """Recursively extract text content from a JSON element."""
-        texts = []
-
-        # Get direct content
-        if "content" in element:
-            texts.append(element["content"])
-
-        # Process nested elements
-        for key in ["kids", "rows", "cells", "list items"]:
-            if key in element:
-                for child in element[key]:
-                    texts.append(self._extract_text_from_element(child))
-
-        return "\n".join(filter(None, texts))
-
     def _split_json_into_pages(
         self, data: Dict[str, Any], source_name: str
     ) -> Iterator[Document]:
-        """Split JSON content by page number and yield Documents for each page."""
+        """Split JSON content by page number and yield Documents for each page.
+
+        Each Document's page_content is a JSON string containing the structured
+        elements for that page, preserving the original JSON structure.
+        """
         # Group elements by page number
         pages: Dict[int, List[Dict[str, Any]]] = defaultdict(list)
 
@@ -195,22 +183,23 @@ class OpenDataLoaderPDFLoader(BaseLoader):
             page_num = element.get("page number", 1)
             pages[page_num].append(element)
 
-        # Yield a Document for each page
+        # Yield a Document for each page with JSON content
         for page_num in sorted(pages.keys()):
             page_elements = pages[page_num]
-            # Extract text from all elements on this page
-            page_texts = [self._extract_text_from_element(el) for el in page_elements]
-            page_content = "\n".join(filter(None, page_texts))
+            page_data = {
+                "page number": page_num,
+                "kids": page_elements,
+            }
+            page_content = json.dumps(page_data, ensure_ascii=False)
 
-            if page_content.strip():
-                yield Document(
-                    page_content=page_content,
-                    metadata={
-                        "source": source_name,
-                        "format": self.format,
-                        "page": page_num,
-                    },
-                )
+            yield Document(
+                page_content=page_content,
+                metadata={
+                    "source": source_name,
+                    "format": self.format,
+                    "page": page_num,
+                },
+            )
 
     def lazy_load(self) -> Iterator[Document]:
         """Sequentially process each PDF file and yield Documents."""
