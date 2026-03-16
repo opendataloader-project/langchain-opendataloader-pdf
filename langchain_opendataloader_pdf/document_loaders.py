@@ -62,6 +62,11 @@ class OpenDataLoaderPDFLoader(BaseLoader):
         pages: Optional[str] = None,
         include_header_footer: bool = False,
         split_pages: bool = True,
+        hybrid: Optional[str] = None,
+        hybrid_mode: Optional[str] = None,
+        hybrid_url: Optional[str] = None,
+        hybrid_timeout: Optional[str] = None,
+        hybrid_fallback: bool = False,
     ):
         """Initialize the loader.
 
@@ -95,6 +100,16 @@ class OpenDataLoaderPDFLoader(BaseLoader):
             include_header_footer: Include page headers and footers in output.
             split_pages: If True, split output into separate Documents per page.
                 Automatically sets the appropriate page separator for the format.
+            hybrid: Backend for hybrid AI extraction. None = Java-only (default).
+                Values: "docling-fast". Requires a running hybrid backend server.
+            hybrid_mode: Triage mode when hybrid is enabled.
+                "auto" (default): route only complex pages to backend.
+                "full": route all pages to backend.
+            hybrid_url: Custom backend server URL. Default: http://localhost:5002
+            hybrid_timeout: Backend request timeout in milliseconds (as string).
+                Default: "30000" (30 seconds).
+            hybrid_fallback: Opt-in to Java fallback on backend failure.
+                Default: False.
         """
         if isinstance(file_path, (str, Path)):
             self.file_paths = [str(file_path)]
@@ -116,6 +131,11 @@ class OpenDataLoaderPDFLoader(BaseLoader):
         self.pages = pages
         self.include_header_footer = include_header_footer
         self.split_pages = split_pages
+        self.hybrid = hybrid
+        self.hybrid_mode = hybrid_mode
+        self.hybrid_url = hybrid_url
+        self.hybrid_timeout = hybrid_timeout
+        self.hybrid_fallback = hybrid_fallback
 
     # Internal separator used for page splitting (unique enough to avoid collisions)
     _PAGE_SPLIT_SEPARATOR = "\n<<<ODL_PAGE_BREAK_%page-number%>>>\n"

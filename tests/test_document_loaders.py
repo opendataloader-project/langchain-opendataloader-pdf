@@ -94,6 +94,29 @@ class TestOpenDataLoaderPDFLoaderInit:
         )
         assert loader.include_header_footer is True
 
+    def test_init_hybrid_defaults(self):
+        loader = OpenDataLoaderPDFLoader(file_path="test.pdf")
+        assert loader.hybrid is None
+        assert loader.hybrid_mode is None
+        assert loader.hybrid_url is None
+        assert loader.hybrid_timeout is None
+        assert loader.hybrid_fallback is False
+
+    def test_init_hybrid_custom_values(self):
+        loader = OpenDataLoaderPDFLoader(
+            file_path="test.pdf",
+            hybrid="docling-fast",
+            hybrid_mode="full",
+            hybrid_url="http://my-server:5002",
+            hybrid_timeout="60000",
+            hybrid_fallback=True,
+        )
+        assert loader.hybrid == "docling-fast"
+        assert loader.hybrid_mode == "full"
+        assert loader.hybrid_url == "http://my-server:5002"
+        assert loader.hybrid_timeout == "60000"
+        assert loader.hybrid_fallback is True
+
     def test_init_defaults_for_new_options(self):
         loader = OpenDataLoaderPDFLoader(file_path="test.pdf")
         assert loader.password is None
