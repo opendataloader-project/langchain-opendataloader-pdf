@@ -27,7 +27,9 @@ Added to `__init__` after `split_pages`:
 ```python
 hybrid: Optional[str] = None,
     # Backend selection. None = Java-only (default).
-    # Values: "docling-fast", "hancom"
+    # Values: "docling-fast"
+    # Note: "hancom" exists in Java core but is not exposed in
+    # convert() Python API yet. Add when core exposes it.
 
 hybrid_mode: Optional[str] = None,
     # Triage mode when hybrid is enabled.
@@ -39,11 +41,13 @@ hybrid_url: Optional[str] = None,
     # Default: http://localhost:5002 (docling-fast)
 
 hybrid_timeout: Optional[str] = None,
-    # Backend request timeout in milliseconds.
-    # Default: "30000"
+    # Backend request timeout in milliseconds as string.
+    # Default: "30000" (30 seconds)
+    # Note: str type matches core engine's convert() signature.
 
-hybrid_fallback: bool = True,
-    # Fall back to Java extraction on backend failure.
+hybrid_fallback: bool = False,
+    # Opt-in to Java fallback on backend failure.
+    # Default: False (matches core engine default).
 ```
 
 ### 2. convert() Call
@@ -69,6 +73,10 @@ When `self.hybrid` is set (not None), add `"hybrid": self.hybrid` to Document me
 
 No client-side validation of hybrid values. The core engine already validates and raises errors for invalid combinations. This keeps the wrapper thin.
 
+### 5. Error Behavior
+
+The existing `lazy_load()` catches all exceptions with `except Exception` and logs them — no re-raise. This means when hybrid backend fails with `fallback=False`, `convert()` raises an exception, but `lazy_load()` swallows it and yields zero documents. This is **existing behavior** and not changed in this spec. Tests must expect zero documents, not raised exceptions.
+
 ---
 
 ## Test Plan
@@ -77,28 +85,28 @@ No client-side validation of hybrid values. The core engine already validates an
 
 | Test | Description |
 |------|-------------|
-| `test_init_hybrid_defaults` | All 5 hybrid params default correctly (None/True) |
+| `test_init_hybrid_defaults` | All 5 hybrid params default correctly (None/False) |
 | `test_init_hybrid_custom_values` | Custom values stored correctly |
-| `test_convert_called_with_hybrid_params` | `convert()` receives all 5 hybrid params |
-| `test_convert_hybrid_none_passthrough` | `convert()` receives None when hybrid not set |
+| `test_convert_called_with_hybrid_params` | `convert()` receives all 5 hybrid params individually |
+| `test_convert_called_with_all_params_together` | `convert()` receives hybrid params combined with existing params |
+| `test_convert_hybrid_none_passthrough` | `convert()` receives None/False when hybrid not set |
 | `test_metadata_includes_hybrid` | Document metadata contains `hybrid` key when set |
 | `test_metadata_no_hybrid_when_off` | Document metadata has no `hybrid` key when None |
 | `test_split_pages_metadata_includes_hybrid` | Per-page Documents include hybrid in metadata |
 | `test_split_json_pages_metadata_includes_hybrid` | JSON split Documents include hybrid in metadata |
 
-### Integration Tests (test_integration.py) — requires Java 11+
+### Integration Tests (test_integration.py) — requires Java 11+ only (NO hybrid server)
+
+These tests validate hybrid parameter passthrough and fallback behavior using only local Java. They do NOT require a running hybrid backend server.
 
 | Test | Description | Skip Condition |
 |------|-------------|----------------|
-| `test_hybrid_docling_fast_text` | Hybrid extraction → text format | No Java or no hybrid server |
-| `test_hybrid_docling_fast_markdown` | Hybrid extraction → markdown format | No Java or no hybrid server |
-| `test_hybrid_docling_fast_json` | Hybrid extraction → json format | No Java or no hybrid server |
-| `test_hybrid_mode_full` | All pages routed to backend | No Java or no hybrid server |
-| `test_hybrid_split_pages` | Hybrid + split_pages combination | No Java or no hybrid server |
-| `test_hybrid_fallback_on_bad_url` | fallback=True with unreachable URL → Java result | No Java |
-| `test_hybrid_no_fallback_on_bad_url` | fallback=False with unreachable URL → error | No Java |
+| `test_hybrid_fallback_on_bad_url` | fallback=True with unreachable URL → Java result (documents returned) | No Java |
+| `test_hybrid_no_fallback_on_bad_url` | fallback=False with unreachable URL → zero documents (error swallowed by lazy_load) | No Java |
 
 ### E2E Tests (test_e2e_hybrid.py) — requires Java 11+ AND running hybrid server
+
+These tests validate actual hybrid extraction end-to-end with a real backend server. They cover format correctness, triage behavior, and timeout handling that cannot be tested without a live server.
 
 **Skip condition**: `@pytest.mark.skipif` — Java unavailable OR hybrid server not reachable.
 
@@ -111,8 +119,8 @@ No client-side validation of hybrid values. The core engine already validates an
 | 3 | `test_full_mode` | Any PDF | All pages processed by backend (compare with auto result) |
 | 4 | `test_split_pages_hybrid` | Multi-page PDF | Per-page Documents, correct page metadata |
 | 5 | `test_all_formats` | Same PDF → text, markdown, json, html | All 4 formats produce valid output |
-| 6 | `test_fallback_bad_url` | Invalid URL + fallback=True | Java fallback returns valid result |
-| 7 | `test_no_fallback_bad_url` | Invalid URL + fallback=False | Error raised or empty result |
+| 6 | `test_fallback_bad_url` | Invalid URL + fallback=True | Java fallback returns valid Documents |
+| 7 | `test_no_fallback_bad_url` | Invalid URL + fallback=False | Zero documents returned (error swallowed by lazy_load) |
 | 8 | `test_timeout_short` | timeout=1ms | Timeout behavior confirmed |
 
 **Fixtures**:
@@ -148,7 +156,23 @@ def multi_page_pdf():
 | `tests/test_document_loaders.py` | Add 8 unit tests |
 | `tests/test_integration.py` | Add 7 integration tests |
 | `tests/test_e2e_hybrid.py` | New file, 8 E2E tests |
-| `README.md` | Add hybrid usage example |
+| `README.md` | Add hybrid usage example (see below) |
+
+## README Example
+
+```python
+# Hybrid mode: route complex pages to AI backend for better accuracy
+loader = OpenDataLoaderPDFLoader(
+    file_path="document.pdf",
+    format="markdown",
+    hybrid="docling-fast",          # Enable hybrid with docling-fast backend
+    hybrid_mode="auto",             # Auto-triage: only complex pages go to backend
+    hybrid_url="http://localhost:5002",  # Backend server URL
+)
+documents = loader.load()
+```
+
+---
 
 ## Out of Scope
 
