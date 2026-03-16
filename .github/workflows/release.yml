@@ -40,7 +40,7 @@ jobs:
 
       - name: '[Python] Build and test'
         run: |
-          sed -i "s/version = \"0.0.0\"/version = \"${{ env.VERSION }}\"/" pyproject.toml
+          sed -i "s/^version = \".*\"/version = \"${{ env.VERSION }}\"/" pyproject.toml
           uv build
 
       # =================================================================
