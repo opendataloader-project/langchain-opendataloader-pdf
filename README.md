@@ -14,7 +14,7 @@ key-differentiators: [LangChain-native BaseLoader, per-page Document splitting, 
 
 LangChain document loader for [OpenDataLoader PDF](https://github.com/opendataloader-project/opendataloader-pdf) — parse PDFs into structured `Document` objects for RAG pipelines.
 
-For the full feature set of the core engine (hybrid AI mode, OCR, formula extraction, benchmarks, accessibility), see the [OpenDataLoader PDF documentation](https://github.com/opendataloader-project/opendataloader-pdf).
+For the full feature set of the core engine (hybrid AI mode, OCR, formula extraction, benchmarks, accessibility), see the [OpenDataLoader PDF documentation](https://opendataloader.org/docs).
 
 [![PyPI version](https://img.shields.io/pypi/v/langchain-opendataloader-pdf.svg)](https://pypi.org/project/langchain-opendataloader-pdf/)
 [![License](https://img.shields.io/pypi/l/langchain-opendataloader-pdf.svg)](https://github.com/opendataloader-project/langchain-opendataloader-pdf/blob/main/LICENSE)
@@ -248,7 +248,7 @@ Apache License 2.0. See [LICENSE](LICENSE) for details.
 
 ## Links
 
-- [OpenDataLoader PDF](https://github.com/opendataloader-project/opendataloader-pdf) — Core PDF parsing engine (benchmarks, hybrid mode, accessibility, full documentation)
-- [LangChain Python Docs](https://python.langchain.com/docs/integrations/document_loaders/opendataloader_pdf/) — Python API reference
-- [LangChain Integration Guide](https://docs.langchain.com/oss/python/integrations/document_loaders/opendataloader_pdf) — Integration documentation
+- [Documentation](https://opendataloader.org/docs) — Full documentation (hybrid mode, benchmarks, accessibility)
+- [GitHub](https://github.com/opendataloader-project/opendataloader-pdf) — Core engine source code
+- [LangChain Docs](https://docs.langchain.com/oss/python/integrations/document_loaders/opendataloader_pdf) — LangChain integration reference
 - [PyPI Package](https://pypi.org/project/langchain-opendataloader-pdf/)
