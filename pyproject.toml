@@ -33,7 +33,7 @@ classifiers = [
 ]
 dependencies = [
     "langchain-core>=1.0,<2.0",
-    "opendataloader-pdf>=2.0.0",
+    "opendataloader-pdf>=2.1.0",
 ]
 
 [project.urls]
@@ -44,4 +44,5 @@ Issues = "https://github.com/opendataloader-project/langchain-opendataloader-pdf
 [dependency-groups]
 dev = [
     "pytest>=8.0",
+    "pytest-socket>=0.7.0",
 ]

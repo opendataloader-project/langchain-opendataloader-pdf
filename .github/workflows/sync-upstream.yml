@@ -1,0 +1,264 @@
+name: Sync upstream release
+
+on:
+  repository_dispatch:
+    types: [upstream-release]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'opendataloader-pdf version (e.g. 2.3.0)'
+        required: true
+
+permissions: {}
+
+concurrency:
+  group: sync-upstream
+  cancel-in-progress: false
+
+jobs:
+  # =================================================================
+  # Job 1: Generate updated code
+  # =================================================================
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    outputs:
+      changed: ${{ steps.changes.outputs.changed }}
+      breaking: ${{ steps.breaking.outputs.detected }}
+      branch: ${{ steps.branch.outputs.name }}
+
+    env:
+      VERSION: ${{ github.event.client_payload.version || github.event.inputs.version }}
+
+    steps:
+      - name: Validate version format
+        run: |
+          if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Invalid version format: '$VERSION'. Expected semver (e.g., 2.3.0)"
+            exit 1
+          fi
+
+      - name: Checkout langchain-opendataloader-pdf
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout opendataloader-pdf (sparse)
+        uses: actions/checkout@v4
+        with:
+          repository: opendataloader-project/opendataloader-pdf
+          ref: v${{ env.VERSION }}
+          path: upstream
+          sparse-checkout: |
+            options.json
+            scripts/generate-langchain.mjs
+            scripts/langchain-sync-config.json
+            scripts/utils.mjs
+          sparse-checkout-cone-mode: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Save current params (for breaking change detection)
+        run: |
+          grep -E "^\s+(self\.\w+ =|# --- )" langchain_opendataloader_pdf/document_loaders.py \
+            | grep "self\." | sed 's/.*self\.\([a-z_]*\).*/\1/' | sort > /tmp/params-before.txt
+
+      - name: Run langchain code generator
+        run: |
+          mkdir -p .sync-report
+          node upstream/scripts/generate-langchain.mjs \
+            --options upstream/options.json \
+            --config upstream/scripts/langchain-sync-config.json \
+            --target langchain_opendataloader_pdf/document_loaders.py \
+            --readme README.md \
+            --version "$VERSION" \
+            --pr-body .sync-report/pr-body.md
+
+      - name: Update pyproject.toml dependency
+        run: |
+          sed -i "s/\"opendataloader-pdf>=.*\"/\"opendataloader-pdf>=$VERSION\"/" pyproject.toml
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if git diff --quiet; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Changes detected:"
+            git diff --stat
+          fi
+
+      - name: Detect breaking changes
+        id: breaking
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          grep -E "^\s+(self\.\w+ =|# --- )" langchain_opendataloader_pdf/document_loaders.py \
+            | grep "self\." | sed 's/.*self\.\([a-z_]*\).*/\1/' | sort > /tmp/params-after.txt
+          REMOVED=$(comm -23 /tmp/params-before.txt /tmp/params-after.txt)
+          if [ -n "$REMOVED" ]; then
+            echo "detected=true" >> $GITHUB_OUTPUT
+            echo "⚠️ Breaking: removed params: $REMOVED"
+            echo "$REMOVED" > .sync-report/breaking-changes.txt
+          else
+            echo "detected=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create branch and push
+        if: steps.changes.outputs.changed == 'true'
+        id: branch
+        run: |
+          BRANCH="sync/v$VERSION"
+          echo "name=$BRANCH" >> $GITHUB_OUTPUT
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add langchain_opendataloader_pdf/document_loaders.py pyproject.toml README.md
+          git add .sync-report/ || true
+          git commit -m "sync: update to opendataloader-pdf v$VERSION"
+          git push origin "$BRANCH" --force-with-lease
+
+  # =================================================================
+  # Job 2: Test on matrix
+  # =================================================================
+  test:
+    permissions:
+      contents: read
+    needs: generate
+    if: needs.generate.outputs.changed == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10', '3.13']
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    env:
+      VERSION: ${{ github.event.client_payload.version || github.event.inputs.version }}
+
+    steps:
+      - name: Checkout sync branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.generate.outputs.branch }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Wait for PyPI availability
+        run: |
+          for i in $(seq 1 20); do
+            if pip install --dry-run "opendataloader-pdf==$VERSION" 2>/dev/null; then
+              echo "Version $VERSION available on PyPI"
+              exit 0
+            fi
+            echo "Attempt $i/20: waiting 30s..."
+            sleep 30
+          done
+          echo "::error::PyPI version $VERSION not available after 10 minutes"
+          exit 1
+
+      - name: Install dependencies
+        run: |
+          pip install -e . pytest pytest-socket
+          pip install "opendataloader-pdf>=$VERSION"
+
+      - name: Run unit tests
+        run: pytest tests/test_document_loaders.py -v --disable-socket --allow-unix-socket
+
+  # =================================================================
+  # Job 3: Create PR + notify
+  # =================================================================
+  create-pr:
+    needs: [generate, test]
+    # Runs even when test is skipped/failed: creates draft PR on failure, ready PR on success
+    if: ${{ always() && needs.generate.result == 'success' && needs.generate.outputs.changed == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: write
+
+    env:
+      VERSION: ${{ github.event.client_payload.version || github.event.inputs.version }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      TEST_RESULT: ${{ needs.test.result }}
+      BREAKING: ${{ needs.generate.outputs.breaking }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.generate.outputs.branch }}
+          fetch-depth: 2
+
+      - name: Determine PR status
+        id: status
+        run: |
+          if [ "$TEST_RESULT" == "success" ]; then
+            echo "draft=false" >> $GITHUB_OUTPUT
+            echo "result=✅ All tests passed" >> $GITHUB_OUTPUT
+          else
+            echo "draft=true" >> $GITHUB_OUTPUT
+            echo "result=❌ Tests failed" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build PR body
+        env:
+          STATUS_RESULT: ${{ steps.status.outputs.result }}
+        run: |
+          cat > /tmp/pr-body.md << ENDOFBODY
+## Sync with opendataloader-pdf v${VERSION}
+
+${STATUS_RESULT}
+
+Auto-generated from [opendataloader-pdf v${VERSION}](https://github.com/opendataloader-project/opendataloader-pdf/releases/tag/v${VERSION}).
+ENDOFBODY
+
+          if [ "$BREAKING" == "true" ]; then
+            echo "" >> /tmp/pr-body.md
+            echo "### ⚠️ Breaking Changes Detected" >> /tmp/pr-body.md
+            cat .sync-report/breaking-changes.txt >> /tmp/pr-body.md 2>/dev/null || echo "See diff for details" >> /tmp/pr-body.md
+          fi
+
+          echo "" >> /tmp/pr-body.md
+          echo "### Changes" >> /tmp/pr-body.md
+          echo '```' >> /tmp/pr-body.md
+          git diff main...HEAD --stat >> /tmp/pr-body.md
+          echo '```' >> /tmp/pr-body.md
+
+      - name: Create pull request
+        env:
+          STATUS_DRAFT: ${{ steps.status.outputs.draft }}
+        run: |
+          DRAFT_FLAG=""
+          [ "$STATUS_DRAFT" == "true" ] && DRAFT_FLAG="--draft"
+
+          LABELS="sync,automated"
+          [ "$BREAKING" == "true" ] && LABELS="$LABELS,breaking-change"
+
+          gh pr create \
+            --title "sync: update to opendataloader-pdf v$VERSION" \
+            --body-file /tmp/pr-body.md \
+            --base main \
+            $DRAFT_FLAG \
+            --label "$LABELS"
+
+      - name: Notify Slack
+        if: always() && env.SLACK_URL != ''
+        env:
+          SLACK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        uses: slackapi/slack-github-action@v2.1.0
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "langchain sync v${{ env.VERSION }}: ${{ steps.status.outputs.result }}\n${{ needs.generate.outputs.breaking == 'true' && '⚠️ Breaking changes detected!' || '' }}\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View run>"
+            }

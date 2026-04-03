@@ -4,25 +4,12 @@ These tests require Java 11+ and actual PDF files to run.
 They are skipped if the required resources are not available.
 """
 
-import subprocess
 from pathlib import Path
 
 import pytest
 
 from langchain_opendataloader_pdf import OpenDataLoaderPDFLoader
-
-
-def java_available() -> bool:
-    """Check if Java is available on the system."""
-    try:
-        result = subprocess.run(
-            ["java", "-version"],
-            capture_output=True,
-            text=True,
-        )
-        return result.returncode == 0
-    except FileNotFoundError:
-        return False
+from tests.conftest import java_available
 
 
 SAMPLES_DIR = Path(__file__).parent.parent / "samples" / "pdf"
@@ -216,6 +203,66 @@ class TestIntegrationWithOptions:
         documents = loader.load()
         assert len(documents) == 1
 
+    def test_load_with_replace_invalid_chars(self, sample_pdf: Path):
+        """Test loading with replace_invalid_chars option."""
+        loader = OpenDataLoaderPDFLoader(
+            file_path=str(sample_pdf),
+            format="text",
+            quiet=True,
+            replace_invalid_chars="?",
+        )
+        documents = loader.load()
+        assert len(documents) == 1
+
+    def test_load_with_content_safety_off(self, sample_pdf: Path):
+        """Test loading with content_safety_off option."""
+        loader = OpenDataLoaderPDFLoader(
+            file_path=str(sample_pdf),
+            format="text",
+            quiet=True,
+            content_safety_off=["all"],
+        )
+        documents = loader.load()
+        assert len(documents) == 1
+
+    def test_load_with_detect_strikethrough(self, sample_pdf: Path):
+        """Test loading with detect_strikethrough option."""
+        loader = OpenDataLoaderPDFLoader(
+            file_path=str(sample_pdf),
+            format="markdown",
+            quiet=True,
+            detect_strikethrough=True,
+        )
+        documents = loader.load()
+        assert len(documents) == 1
+        assert documents[0].metadata["format"] == "markdown"
+
+    def test_load_with_image_format_jpeg(self, sample_pdf: Path):
+        """Test loading with image_format=jpeg and embedded output."""
+        loader = OpenDataLoaderPDFLoader(
+            file_path=str(sample_pdf),
+            format="markdown",
+            quiet=True,
+            image_output="embedded",
+            image_format="jpeg",
+        )
+        documents = loader.load()
+        assert len(documents) == 1
+
+    def test_load_with_image_dir(self, sample_pdf: Path, tmp_path: Path):
+        """Test loading with image_dir for external image output."""
+        image_dir = tmp_path / "images"
+        image_dir.mkdir()
+        loader = OpenDataLoaderPDFLoader(
+            file_path=str(sample_pdf),
+            format="markdown",
+            quiet=True,
+            image_output="external",
+            image_dir=str(image_dir),
+        )
+        documents = loader.load()
+        assert len(documents) == 1
+
     def test_load_multiple_files(self, sample_pdfs: list[Path]):
         """Test loading multiple PDF files."""
         if len(sample_pdfs) < 2:
@@ -230,6 +277,47 @@ class TestIntegrationWithOptions:
         documents = loader.load()
 
         assert len(documents) == 2
+
+
+class TestIntegrationPathHandling:
+    """Test file_path handling with Path objects and directories."""
+
+    def test_load_with_path_object(self, sample_pdf: Path):
+        """Test loading with a pathlib.Path object."""
+        loader = OpenDataLoaderPDFLoader(
+            file_path=sample_pdf,  # Path object, not string
+            format="text",
+            quiet=True,
+        )
+        documents = loader.load()
+        assert len(documents) >= 1
+        assert len(documents[0].page_content) > 0
+
+    def test_load_with_path_object_list(self, sample_pdfs: list[Path]):
+        """Test loading with a list of Path objects."""
+        if len(sample_pdfs) < 2:
+            pytest.skip("Need at least 2 sample PDFs")
+
+        loader = OpenDataLoaderPDFLoader(
+            file_path=sample_pdfs[:2],  # list of Path objects
+            format="text",
+            quiet=True,
+            split_pages=False,
+        )
+        documents = loader.load()
+        assert len(documents) == 2
+
+    def test_load_with_directory_path(self):
+        """Test loading with a directory path."""
+        loader = OpenDataLoaderPDFLoader(
+            file_path=str(SAMPLES_DIR),
+            format="text",
+            quiet=True,
+            split_pages=False,
+        )
+        documents = loader.load()
+        # Should load all PDFs in the directory
+        assert len(documents) >= 1
 
 
 class TestIntegrationLazyLoad:
