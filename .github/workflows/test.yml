@@ -1,0 +1,60 @@
+name: Test
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit-test:
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10', '3.12', '3.13']
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -e . pytest pytest-socket
+
+      - name: Run unit tests
+        run: pytest tests/test_document_loaders.py -v --disable-socket --allow-unix-socket
+
+  min-dep-test:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: pip
+
+      - name: Install minimum dependency versions
+        run: |
+          pip install "langchain-core==1.0.0" "opendataloader-pdf==2.1.0" pytest pytest-socket
+          pip install -e . --no-deps
+
+      - name: Run unit tests with minimum deps
+        run: pytest tests/test_document_loaders.py -v --disable-socket --allow-unix-socket

@@ -46,6 +46,7 @@ class OpenDataLoaderPDFLoader(BaseLoader):
     def __init__(
         self,
         file_path: Union[str, Path, List[Union[str, Path]]],
+        # --- BEGIN SYNCED PARAMS ---
         format: str = "text",
         quiet: bool = False,
         content_safety_off: Optional[List[str]] = None,
@@ -61,12 +62,14 @@ class OpenDataLoaderPDFLoader(BaseLoader):
         sanitize: bool = False,
         pages: Optional[str] = None,
         include_header_footer: bool = False,
-        split_pages: bool = True,
+        detect_strikethrough: bool = False,
         hybrid: Optional[str] = None,
         hybrid_mode: Optional[str] = None,
         hybrid_url: Optional[str] = None,
         hybrid_timeout: Optional[str] = None,
         hybrid_fallback: bool = False,
+        # --- END SYNCED PARAMS ---
+        split_pages: bool = True,
     ):
         """Initialize the loader.
 
@@ -108,7 +111,7 @@ class OpenDataLoaderPDFLoader(BaseLoader):
                 "full": route all pages to backend.
             hybrid_url: Custom backend server URL. Default: http://localhost:5002
             hybrid_timeout: Backend request timeout in milliseconds (as string).
-                Default: "30000" (30 seconds).
+                Default: "0" (no timeout).
             hybrid_fallback: Opt-in to Java fallback on backend failure.
                 Default: False.
         """
@@ -116,6 +119,7 @@ class OpenDataLoaderPDFLoader(BaseLoader):
             self.file_paths = [str(file_path)]
         else:
             self.file_paths = [str(p) for p in file_path]
+        # --- BEGIN SYNCED ASSIGNMENTS ---
         self.format = format.lower()
         self.quiet = quiet
         self.content_safety_off = content_safety_off
@@ -131,12 +135,14 @@ class OpenDataLoaderPDFLoader(BaseLoader):
         self.sanitize = sanitize
         self.pages = pages
         self.include_header_footer = include_header_footer
-        self.split_pages = split_pages
+        self.detect_strikethrough = detect_strikethrough
         self.hybrid = hybrid
         self.hybrid_mode = hybrid_mode
         self.hybrid_url = hybrid_url
         self.hybrid_timeout = hybrid_timeout
         self.hybrid_fallback = hybrid_fallback
+        # --- END SYNCED ASSIGNMENTS ---
+        self.split_pages = split_pages
 
     # Internal separator used for page splitting (unique enough to avoid collisions)
     _PAGE_SPLIT_SEPARATOR = "\n<<<ODL_PAGE_BREAK_%page-number%>>>\n"
@@ -247,6 +253,7 @@ class OpenDataLoaderPDFLoader(BaseLoader):
             opendataloader_pdf.convert(
                 input_path=self.file_paths,
                 output_dir=output_dir,
+                # --- BEGIN SYNCED CONVERT KWARGS ---
                 format=[self.format],
                 quiet=self.quiet,
                 content_safety_off=self.content_safety_off,
@@ -256,20 +263,22 @@ class OpenDataLoaderPDFLoader(BaseLoader):
                 use_struct_tree=self.use_struct_tree,
                 table_method=self.table_method,
                 reading_order=self.reading_order,
-                markdown_page_separator=page_sep,
-                text_page_separator=page_sep,
-                html_page_separator=page_sep,
                 image_output=self.image_output,
                 image_format=self.image_format,
                 image_dir=self.image_dir,
                 sanitize=self.sanitize,
                 pages=self.pages,
                 include_header_footer=self.include_header_footer,
+                detect_strikethrough=self.detect_strikethrough,
                 hybrid=self.hybrid,
                 hybrid_mode=self.hybrid_mode,
                 hybrid_url=self.hybrid_url,
                 hybrid_timeout=self.hybrid_timeout,
                 hybrid_fallback=self.hybrid_fallback,
+                # --- END SYNCED CONVERT KWARGS ---
+                markdown_page_separator=page_sep,
+                text_page_separator=page_sep,
+                html_page_separator=page_sep,
             )
         except Exception as e:
             if self.hybrid:
@@ -278,14 +287,13 @@ class OpenDataLoaderPDFLoader(BaseLoader):
             return
 
         try:
-            if self.format == "json":
-                ext = "json"
-            elif self.format == "text":
-                ext = "txt"
-            elif self.format == "html":
-                ext = "html"
-            elif self.format == "markdown":
-                ext = "md"
+            ext_map = {"json": "json", "text": "txt", "html": "html", "markdown": "md"}
+            ext = ext_map.get(self.format)
+            if ext is None:
+                raise ValueError(
+                    f"Invalid format '{self.format}'. "
+                    f"Valid options are: {', '.join(ext_map)}"
+                )
 
             output_path = Path(output_dir)
             files = list(output_path.glob(f"*.{ext}"))

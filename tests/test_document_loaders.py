@@ -1,6 +1,7 @@
 """Unit tests for OpenDataLoaderPDFLoader."""
 
 import json
+from pathlib import Path
 from unittest.mock import patch, MagicMock
 import pytest
 
@@ -17,6 +18,20 @@ class TestOpenDataLoaderPDFLoaderInit:
     def test_init_with_multiple_file_paths(self):
         loader = OpenDataLoaderPDFLoader(file_path=["a.pdf", "b.pdf"])
         assert loader.file_paths == ["a.pdf", "b.pdf"]
+
+    def test_init_with_path_object(self):
+        loader = OpenDataLoaderPDFLoader(file_path=Path("test.pdf"))
+        assert loader.file_paths == ["test.pdf"]
+
+    def test_init_with_path_object_list(self):
+        loader = OpenDataLoaderPDFLoader(
+            file_path=[Path("a.pdf"), Path("b.pdf"), "c.pdf"]
+        )
+        assert loader.file_paths == ["a.pdf", "b.pdf", "c.pdf"]
+
+    def test_init_with_directory_path(self):
+        loader = OpenDataLoaderPDFLoader(file_path="/some/directory")
+        assert loader.file_paths == ["/some/directory"]
 
     def test_init_default_format(self):
         loader = OpenDataLoaderPDFLoader(file_path="test.pdf")
@@ -94,6 +109,16 @@ class TestOpenDataLoaderPDFLoaderInit:
         )
         assert loader.include_header_footer is True
 
+    def test_init_with_detect_strikethrough(self):
+        loader = OpenDataLoaderPDFLoader(
+            file_path="test.pdf", detect_strikethrough=True
+        )
+        assert loader.detect_strikethrough is True
+
+    def test_init_detect_strikethrough_default_false(self):
+        loader = OpenDataLoaderPDFLoader(file_path="test.pdf")
+        assert loader.detect_strikethrough is False
+
     def test_init_hybrid_defaults(self):
         loader = OpenDataLoaderPDFLoader(file_path="test.pdf")
         assert loader.hybrid is None
@@ -131,6 +156,7 @@ class TestOpenDataLoaderPDFLoaderInit:
         assert loader.sanitize is False
         assert loader.pages is None
         assert loader.include_header_footer is False
+        assert loader.detect_strikethrough is False
 
 
 class TestOpenDataLoaderPDFLoaderConvertCall:
@@ -309,6 +335,32 @@ class TestOpenDataLoaderPDFLoaderConvertCall:
 
     @patch("langchain_opendataloader_pdf.document_loaders.opendataloader_pdf")
     @patch("langchain_opendataloader_pdf.document_loaders.tempfile.mkdtemp")
+    def test_convert_passes_detect_strikethrough(self, mock_mkdtemp, mock_odl):
+        mock_mkdtemp.return_value = "/tmp/test"
+        mock_odl.convert = MagicMock()
+
+        loader = OpenDataLoaderPDFLoader(
+            file_path="test.pdf", detect_strikethrough=True
+        )
+        list(loader.lazy_load())
+
+        call_kwargs = mock_odl.convert.call_args[1]
+        assert call_kwargs["detect_strikethrough"] is True
+
+    @patch("langchain_opendataloader_pdf.document_loaders.opendataloader_pdf")
+    @patch("langchain_opendataloader_pdf.document_loaders.tempfile.mkdtemp")
+    def test_convert_detect_strikethrough_default_false(self, mock_mkdtemp, mock_odl):
+        mock_mkdtemp.return_value = "/tmp/test"
+        mock_odl.convert = MagicMock()
+
+        loader = OpenDataLoaderPDFLoader(file_path="test.pdf")
+        list(loader.lazy_load())
+
+        call_kwargs = mock_odl.convert.call_args[1]
+        assert call_kwargs["detect_strikethrough"] is False
+
+    @patch("langchain_opendataloader_pdf.document_loaders.opendataloader_pdf")
+    @patch("langchain_opendataloader_pdf.document_loaders.tempfile.mkdtemp")
     def test_convert_passes_hybrid_params(self, mock_mkdtemp, mock_odl):
         mock_mkdtemp.return_value = "/tmp/test"
         mock_odl.convert = MagicMock()
@@ -369,6 +421,7 @@ class TestOpenDataLoaderPDFLoaderConvertCall:
             sanitize=True,
             pages="1,3,5-7",
             include_header_footer=True,
+            detect_strikethrough=True,
             split_pages=False,
             hybrid="docling-fast",
             hybrid_mode="full",
@@ -383,6 +436,7 @@ class TestOpenDataLoaderPDFLoaderConvertCall:
         assert call_kwargs["format"] == ["markdown"]
         assert call_kwargs["quiet"] is True
         assert call_kwargs["sanitize"] is True
+        assert call_kwargs["detect_strikethrough"] is True
         assert call_kwargs["hybrid"] == "docling-fast"
         assert call_kwargs["hybrid_mode"] == "full"
         assert call_kwargs["hybrid_url"] == "http://my-server:5002"
@@ -412,6 +466,7 @@ class TestOpenDataLoaderPDFLoaderConvertCall:
             sanitize=True,
             pages="1,3,5-7",
             include_header_footer=True,
+            detect_strikethrough=True,
             split_pages=False,
         )
         list(loader.lazy_load())
@@ -433,6 +488,7 @@ class TestOpenDataLoaderPDFLoaderConvertCall:
         assert call_kwargs["sanitize"] is True
         assert call_kwargs["pages"] == "1,3,5-7"
         assert call_kwargs["include_header_footer"] is True
+        assert call_kwargs["detect_strikethrough"] is True
 
 
 class TestOpenDataLoaderPDFLoaderValidation:
@@ -851,3 +907,180 @@ class TestOpenDataLoaderPDFLoaderHybridErrors:
         # Should NOT raise — existing silent behavior
         docs = list(loader.lazy_load())
         assert docs == []
+
+
+class TestOpenDataLoaderPDFLoaderPathHandling:
+    """Test file_path handling with Path objects and convert call."""
+
+    @patch("langchain_opendataloader_pdf.document_loaders.opendataloader_pdf")
+    @patch("langchain_opendataloader_pdf.document_loaders.tempfile.mkdtemp")
+    def test_convert_receives_string_from_path_object(self, mock_mkdtemp, mock_odl):
+        mock_mkdtemp.return_value = "/tmp/test"
+        mock_odl.convert = MagicMock()
+
+        loader = OpenDataLoaderPDFLoader(file_path=Path("test.pdf"))
+        list(loader.lazy_load())
+
+        call_kwargs = mock_odl.convert.call_args[1]
+        assert call_kwargs["input_path"] == ["test.pdf"]
+        assert all(isinstance(p, str) for p in call_kwargs["input_path"])
+
+    @patch("langchain_opendataloader_pdf.document_loaders.opendataloader_pdf")
+    @patch("langchain_opendataloader_pdf.document_loaders.tempfile.mkdtemp")
+    def test_convert_receives_strings_from_mixed_path_list(
+        self, mock_mkdtemp, mock_odl
+    ):
+        mock_mkdtemp.return_value = "/tmp/test"
+        mock_odl.convert = MagicMock()
+
+        loader = OpenDataLoaderPDFLoader(
+            file_path=[Path("a.pdf"), "b.pdf", Path("c.pdf")]
+        )
+        list(loader.lazy_load())
+
+        call_kwargs = mock_odl.convert.call_args[1]
+        assert call_kwargs["input_path"] == ["a.pdf", "b.pdf", "c.pdf"]
+
+
+class TestOpenDataLoaderPDFLoaderJsonEdgeCases:
+    """Test _split_json_into_pages edge cases."""
+
+    def test_split_json_empty_kids(self):
+        """Empty kids array should yield no documents."""
+        loader = OpenDataLoaderPDFLoader(file_path="test.pdf", format="json")
+        data = {"kids": []}
+        docs = list(loader._split_json_into_pages(data, "test.pdf"))
+        assert docs == []
+
+    def test_split_json_no_kids_key(self):
+        """Missing kids key should yield no documents."""
+        loader = OpenDataLoaderPDFLoader(file_path="test.pdf", format="json")
+        data = {"other": "value"}
+        docs = list(loader._split_json_into_pages(data, "test.pdf"))
+        assert docs == []
+
+    def test_split_json_pages_sorted(self):
+        """Pages should be yielded in ascending order regardless of input order."""
+        loader = OpenDataLoaderPDFLoader(file_path="test.pdf", format="json")
+        data = {
+            "kids": [
+                {"page number": 3, "type": "text", "value": "page 3"},
+                {"page number": 1, "type": "text", "value": "page 1"},
+                {"page number": 2, "type": "text", "value": "page 2"},
+            ]
+        }
+        docs = list(loader._split_json_into_pages(data, "test.pdf"))
+        page_nums = [d.metadata["page"] for d in docs]
+        assert page_nums == [1, 2, 3]
+
+    def test_split_json_multiple_elements_same_page(self):
+        """Multiple elements on the same page should be grouped together."""
+        loader = OpenDataLoaderPDFLoader(file_path="test.pdf", format="json")
+        data = {
+            "kids": [
+                {"page number": 1, "type": "heading", "value": "Title"},
+                {"page number": 1, "type": "text", "value": "Body"},
+                {"page number": 2, "type": "text", "value": "Page 2"},
+            ]
+        }
+        docs = list(loader._split_json_into_pages(data, "test.pdf"))
+        assert len(docs) == 2
+        page1_data = json.loads(docs[0].page_content)
+        assert len(page1_data["kids"]) == 2
+
+
+class TestOpenDataLoaderPDFLoaderSplitPagesEdgeCases:
+    """Test _split_into_pages edge cases."""
+
+    def test_split_pages_content_before_first_separator(self):
+        """Content before first separator should be treated as page 1."""
+        loader = OpenDataLoaderPDFLoader(file_path="test.pdf", format="text")
+        content = (
+            "Preamble content\n"
+            "\n<<<ODL_PAGE_BREAK_2>>>\n"
+            "Page 2 content"
+        )
+        docs = list(loader._split_into_pages(content, "test.pdf"))
+        assert len(docs) == 2
+        assert docs[0].metadata["page"] == 1
+        assert "Preamble" in docs[0].page_content
+        assert docs[1].metadata["page"] == 2
+
+    def test_split_pages_empty_content_between_separators(self):
+        """Empty content between separators should be skipped."""
+        loader = OpenDataLoaderPDFLoader(file_path="test.pdf", format="text")
+        content = (
+            "\n<<<ODL_PAGE_BREAK_1>>>\n"
+            "Page 1\n"
+            "\n<<<ODL_PAGE_BREAK_2>>>\n"
+            "   \n"  # whitespace only
+            "\n<<<ODL_PAGE_BREAK_3>>>\n"
+            "Page 3"
+        )
+        docs = list(loader._split_into_pages(content, "test.pdf"))
+        pages = [d.metadata["page"] for d in docs]
+        assert 2 not in pages  # empty page skipped
+        assert 1 in pages
+        assert 3 in pages
+
+    def test_split_pages_no_separators(self):
+        """Content with no separators should treat entire content as page 1."""
+        loader = OpenDataLoaderPDFLoader(file_path="test.pdf", format="text")
+        content = "Just plain text with no separators"
+        docs = list(loader._split_into_pages(content, "test.pdf"))
+        # Content before first separator is treated as page 1 if non-empty
+        assert len(docs) == 1
+        assert docs[0].metadata["page"] == 1
+
+
+class TestOpenDataLoaderPDFLoaderFormatValidation:
+    """Test format handling edge cases."""
+
+    def test_format_stored_lowercase(self):
+        """Format should be stored as lowercase."""
+        loader = OpenDataLoaderPDFLoader(file_path="test.pdf", format="MARKDOWN")
+        assert loader.format == "markdown"
+
+    def test_format_mixed_case(self):
+        """Mixed case format should be normalized."""
+        loader = OpenDataLoaderPDFLoader(file_path="test.pdf", format="Json")
+        assert loader.format == "json"
+
+    def test_invalid_format_raises_on_load(self):
+        """Invalid format should raise ValueError when load is called."""
+        loader = OpenDataLoaderPDFLoader(file_path="test.pdf", format="xml")
+        with pytest.raises(ValueError, match="Invalid format"):
+            list(loader.lazy_load())
+
+
+class TestOpenDataLoaderPDFLoaderTempCleanup:
+    """Test temp file cleanup behavior."""
+
+    @patch("langchain_opendataloader_pdf.document_loaders.opendataloader_pdf")
+    def test_temp_files_deleted_after_read(self, mock_odl):
+        """Temp files should be deleted after reading."""
+        import tempfile
+        import os
+
+        real_tmpdir = tempfile.mkdtemp()
+
+        # Create a fake output file
+        fake_output = os.path.join(real_tmpdir, "test.txt")
+        with open(fake_output, "w") as f:
+            f.write("test content")
+
+        mock_odl.convert = MagicMock()
+
+        with patch(
+            "langchain_opendataloader_pdf.document_loaders.tempfile.mkdtemp",
+            return_value=real_tmpdir,
+        ):
+            loader = OpenDataLoaderPDFLoader(
+                file_path="test.pdf", format="text", split_pages=False
+            )
+            docs = list(loader.lazy_load())
+
+        assert len(docs) == 1
+        assert docs[0].page_content == "test content"
+        # File should be deleted
+        assert not os.path.exists(fake_output)

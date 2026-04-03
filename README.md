@@ -1,7 +1,7 @@
 <!-- AI-AGENT-SUMMARY
 name: langchain-opendataloader-pdf
 category: LangChain document loader, PDF extraction for RAG
-license: MIT
+license: Apache-2.0
 solves: [Load PDFs as LangChain Document objects for RAG pipelines, structured PDF extraction with correct reading order and table preservation]
 input: PDF files (digital, tagged)
 output: LangChain Document objects (text, Markdown, JSON with bounding boxes, HTML)
@@ -234,27 +234,30 @@ results = vectorstore.similarity_search("What is the main topic?")
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `file_path` | `str \| List[str]` | — | **(Required)** PDF file path(s) or directories |
-| `format` | `str` | `"text"` | Output format: `"text"`, `"markdown"`, `"json"`, `"html"` |
 | `split_pages` | `bool` | `True` | Split into separate Documents per page |
-| `quiet` | `bool` | `False` | Suppress console logging |
-| `password` | `str` | `None` | Password for encrypted PDFs |
-| `use_struct_tree` | `bool` | `False` | Use PDF structure tree (tagged PDFs) |
-| `table_method` | `str` | `"default"` | `"default"` (border-based) or `"cluster"` (border + clustering) |
-| `reading_order` | `str` | `"xycut"` | `"xycut"` or `"off"` |
-| `keep_line_breaks` | `bool` | `False` | Preserve original line breaks |
-| `image_output` | `str` | `"off"` | `"off"`, `"embedded"` (Base64), or `"external"` |
-| `image_format` | `str` | `"png"` | `"png"` or `"jpeg"` |
-| `image_dir` | `str` | `None` | Directory for extracted images when using `image_output="external"` |
-| `sanitize` | `bool` | `False` | Sanitize sensitive data (emails, phone numbers, IPs, credit cards, URLs) |
-| `pages` | `str` | `None` | Pages to extract (e.g., `"1,3,5-7"`). Default: all pages |
+<!-- BEGIN SYNCED PARAMS TABLE -->
+| `format` | `str` | `text` | Output format. Values: text, markdown, json, html. Default: text |
+| `quiet` | `bool` | `False` | Suppress console logging output |
+| `content_safety_off` | `List[str]` | `None` | Disable content safety filters. Values: all, hidden-text, off-page, tiny, hidden-ocg |
+| `password` | `str` | `None` | Password for encrypted PDF files |
+| `keep_line_breaks` | `bool` | `False` | Preserve original line breaks in extracted text |
+| `replace_invalid_chars` | `str` | `" "` | Replacement character for invalid/unrecognized characters. Default: space |
+| `use_struct_tree` | `bool` | `False` | Use PDF structure tree (tagged PDF) for reading order and semantic structure |
+| `table_method` | `str` | `"default"` | Table detection method. Values: default (border-based), cluster (border + cluster). Default: default |
+| `reading_order` | `str` | `"xycut"` | Reading order algorithm. Values: off, xycut. Default: xycut |
+| `image_output` | `str` | `off` | Image output mode. Values: off (no images), embedded (Base64), external (file references). Default: off |
+| `image_format` | `str` | `"png"` | Output format for extracted images. Values: png, jpeg. Default: png |
+| `image_dir` | `str` | `None` | Directory for extracted images |
+| `sanitize` | `bool` | `False` | Enable sensitive data sanitization. Replaces emails, phone numbers, IPs, credit cards, and URLs with placeholders |
+| `pages` | `str` | `None` | Pages to extract (e.g., "1,3,5-7"). Default: all pages |
 | `include_header_footer` | `bool` | `False` | Include page headers and footers in output |
-| `content_safety_off` | `List[str]` | `None` | Disable safety filters: `"hidden-text"`, `"off-page"`, `"tiny"`, `"hidden-ocg"`, `"all"` |
-| `replace_invalid_chars` | `str` | `None` | Replacement for invalid characters |
-| `hybrid` | `str` | `None` | Hybrid AI backend: `"docling-fast"`. Requires running backend server |
-| `hybrid_mode` | `str` | `None` | `"auto"` (route complex pages) or `"full"` (route all pages) |
-| `hybrid_url` | `str` | `None` | Backend server URL. Default: `http://localhost:5002` |
-| `hybrid_timeout` | `str` | `None` | Backend timeout in ms. Default: `"30000"` |
-| `hybrid_fallback` | `bool` | `False` | Fall back to Java extraction on backend failure |
+| `detect_strikethrough` | `bool` | `False` | Detect strikethrough text and wrap with ~~ in Markdown output (experimental) |
+| `hybrid` | `str` | `"off"` | Hybrid backend (requires a running server). Quick start: pip install "opendataloader-pdf[hybrid]" && opendataloader-pdf-hybrid --port 5002. For remote servers use --hybrid-url. Values: off (default), docling-fast |
+| `hybrid_mode` | `str` | `"auto"` | Hybrid triage mode. Values: auto (default, dynamic triage), full (skip triage, all pages to backend) |
+| `hybrid_url` | `str` | `None` | Hybrid backend server URL (overrides default) |
+| `hybrid_timeout` | `str` | `"0"` | Hybrid backend request timeout in milliseconds (0 = no timeout). Default: 0 |
+| `hybrid_fallback` | `bool` | `False` | Opt in to Java fallback on hybrid backend error (default: disabled) |
+<!-- END SYNCED PARAMS TABLE -->
 
 ## Document Metadata
 

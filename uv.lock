@@ -267,16 +267,20 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "pytest" },
+    { name = "pytest-socket" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "langchain-core", specifier = ">=1.0,<2.0" },
-    { name = "opendataloader-pdf", specifier = ">=2.0.0" },
+    { name = "opendataloader-pdf", specifier = ">=2.1.0" },
 ]
 
 [package.metadata.requires-dev]
-dev = [{ name = "pytest", specifier = ">=8.0" }]
+dev = [
+    { name = "pytest", specifier = ">=8.0" },
+    { name = "pytest-socket", specifier = ">=0.7.0" },
+]
 
 [[package]]
 name = "langsmith"
@@ -300,10 +304,10 @@ wheels = [
 
 [[package]]
 name = "opendataloader-pdf"
-version = "2.0.0"
+version = "2.2.0"
 source = { registry = "https://pypi.org/simple" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/3d/5f/c97ee55c1c78b96cc65172106123a6dd27e87d8d062c4e3134dc400c3531/opendataloader_pdf-2.0.0-py3-none-any.whl", hash = "sha256:18093fa87a3089abdba14043c187f85c6a4af48c4597710de32d90e95666313e", size = 22271532, upload-time = "2026-03-11T05:13:30.854Z" },
+    { url = "https://files.pythonhosted.org/packages/57/ba/0f113b74908527407a14b230516fb1d6df896b131815ae2488eabc07a48c/opendataloader_pdf-2.2.0-py3-none-any.whl", hash = "sha256:c4328c95f04be86fcebb06b58391f313bb2240527b941f176ba5e569c8b8765c", size = 22441488, upload-time = "2026-03-27T07:28:05.46Z" },
 ]
 
 [[package]]
@@ -563,6 +567,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/d1/db/7ef3487e0fb0049ddb5ce41d3a49c235bf9ad299b6a25d5780a89f19230f/pytest-9.0.2.tar.gz", hash = "sha256:75186651a92bd89611d1d9fc20f0b4345fd827c41ccd5c299a868a05d70edf11", size = 1568901, upload-time = "2025-12-06T21:30:51.014Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/3b/ab/b3226f0bd7cdcf710fbede2b3548584366da3b19b5021e74f5bde2a8fa3f/pytest-9.0.2-py3-none-any.whl", hash = "sha256:711ffd45bf766d5264d487b917733b453d917afd2b0ad65223959f59089f875b", size = 374801, upload-time = "2025-12-06T21:30:49.154Z" },
+]
+
+[[package]]
+name = "pytest-socket"
+version = "0.7.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/05/ff/90c7e1e746baf3d62ce864c479fd53410b534818b9437413903596f81580/pytest_socket-0.7.0.tar.gz", hash = "sha256:71ab048cbbcb085c15a4423b73b619a8b35d6a307f46f78ea46be51b1b7e11b3", size = 12389, upload-time = "2024-01-28T20:17:23.177Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/19/58/5d14cb5cb59409e491ebe816c47bf81423cd03098ea92281336320ae5681/pytest_socket-0.7.0-py3-none-any.whl", hash = "sha256:7e0f4642177d55d317bbd58fc68c6bd9048d6eadb2d46a89307fa9221336ce45", size = 6754, upload-time = "2024-01-28T20:17:22.105Z" },
 ]
 
 [[package]]
