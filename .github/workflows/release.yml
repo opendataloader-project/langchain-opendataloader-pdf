@@ -40,7 +40,9 @@ jobs:
 
       - name: '[Python] Build and test'
         run: |
-          sed -i "s/^version = \".*\"/version = \"${VERSION}\"/" pyproject.toml
+          # Defense-in-depth: escape sed metacharacters in VERSION
+          ESCAPED_VER=$(printf '%s\n' "${VERSION}" | sed 's/[&/\]/\\&/g')
+          sed -i "s/^version = \".*\"/version = \"${ESCAPED_VER}\"/" pyproject.toml
           uv build
 
       # =================================================================
