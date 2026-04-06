@@ -254,7 +254,11 @@ class OpenDataLoaderPDFLoader(BaseLoader):
                 f"Invalid format '{self.format}'. Valid options are: 'json', 'text', 'html', 'markdown'"
             )
 
-        output_dir = tempfile.mkdtemp(dir=tempfile.gettempdir())
+        try:
+            output_dir = tempfile.mkdtemp()
+        except OSError as e:
+            logger.error(f"Failed to create temp directory: {e}")
+            return
 
         try:
             try:
@@ -339,8 +343,9 @@ class OpenDataLoaderPDFLoader(BaseLoader):
                         },
                     )
         except Exception as e:
-            # Output processing failure is fatal; re-raise so callers see it
-            logger.exception("Error processing output files")
+            # Output processing failure is fatal; re-raise so callers handle it.
+            # Use debug level to avoid double-logging if caller also logs.
+            logger.debug("Error processing output files", exc_info=True)
             raise
         finally:
             shutil.rmtree(output_dir, ignore_errors=True)

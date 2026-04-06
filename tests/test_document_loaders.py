@@ -929,7 +929,7 @@ class TestOpenDataLoaderPDFLoaderHybridErrors:
             list(loader.lazy_load())
 
         # Verify tmpdir was cleaned up even after error
-        assert not tmp_path.exists() or not any(tmp_path.iterdir())
+        assert not tmp_path.exists()
 
 
 class TestOpenDataLoaderPDFLoaderPathHandling:
