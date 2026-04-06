@@ -83,17 +83,17 @@ class OpenDataLoaderPDFLoader(BaseLoader):
             password: Password for encrypted PDF files.
             keep_line_breaks: Preserve original line breaks in extracted text.
             replace_invalid_chars: Replacement character for invalid/unrecognized
-                characters. Default: space
+                characters. Default: None (core engine defaults to space)
             use_struct_tree: Use PDF structure tree (tagged PDF) for reading order
                 and semantic structure.
             table_method: Table detection method.
                 (Values: "default" (border-based), "cluster" (border + cluster))
             reading_order: Reading order algorithm.
-                (Values: "off", "xycut". Default: "xycut")
+                (Values: "off", "xycut". Default: None, core engine defaults to "xycut")
             image_output: Image output mode. Default: "off" (no images extracted).
                 (Values: "off", "embedded" (Base64), "external" (file references))
             image_format: Output format for extracted images.
-                (Values: "png", "jpeg". Default: "png")
+                (Values: "png", "jpeg". Default: None, core engine defaults to "png")
             image_dir: Directory where extracted images are saved when using
                 image_output="external". If not set, images are saved alongside
                 the output files in a temporary directory.
@@ -111,7 +111,7 @@ class OpenDataLoaderPDFLoader(BaseLoader):
                 "full": route all pages to backend.
             hybrid_url: Custom backend server URL. Default: http://localhost:5002
             hybrid_timeout: Backend request timeout in milliseconds (as string).
-                Default: "0" (no timeout).
+                Default: None (core engine defaults to 30000ms / 30 seconds).
             hybrid_fallback: Opt-in to Java fallback on backend failure.
                 Default: False.
         """
@@ -326,4 +326,5 @@ class OpenDataLoaderPDFLoader(BaseLoader):
                     logger.error(f"Error deleting temp file '{file}': {e}")
 
         except Exception as e:
-            logger.error(f"Error: {e}")
+            logger.error(f"Error processing output files: {e}")
+            raise
