@@ -237,24 +237,24 @@ results = vectorstore.similarity_search("What is the main topic?")
 | `split_pages` | `bool` | `True` | Split into separate Documents per page |
 | `format` | `str` | `"text"` | Output format. Values: text, markdown, json, html |
 | `quiet` | `bool` | `False` | Suppress console logging output |
-| `content_safety_off` | `List[str]` | `None` | Disable content safety filters. Values: all, hidden-text, off-page, tiny, hidden-ocg |
-| `password` | `str` | `None` | Password for encrypted PDF files |
+| `content_safety_off` | `Optional[List[str]]` | `None` | Disable content safety filters. Values: all, hidden-text, off-page, tiny, hidden-ocg |
+| `password` | `Optional[str]` | `None` | Password for encrypted PDF files |
 | `keep_line_breaks` | `bool` | `False` | Preserve original line breaks in extracted text |
-| `replace_invalid_chars` | `str` | `None` | Replacement character for invalid/unrecognized characters. Core engine defaults to space when not set |
+| `replace_invalid_chars` | `Optional[str]` | `None` | Replacement character for invalid/unrecognized characters. Core engine defaults to space when not set |
 | `use_struct_tree` | `bool` | `False` | Use PDF structure tree (tagged PDF) for reading order and semantic structure |
-| `table_method` | `str` | `None` | Table detection method. Values: default (border-based), cluster (border + cluster). Core engine defaults to "default" |
-| `reading_order` | `str` | `None` | Reading order algorithm. Values: off, xycut. Core engine defaults to "xycut" |
+| `table_method` | `Optional[str]` | `None` | Table detection method. Values: default (border-based), cluster (border + cluster). Core engine defaults to "default" |
+| `reading_order` | `Optional[str]` | `None` | Reading order algorithm. Values: off, xycut. Core engine defaults to "xycut" |
 | `image_output` | `str` | `"off"` | Image output mode. Values: off (no images), embedded (Base64), external (file references) |
-| `image_format` | `str` | `None` | Output format for extracted images. Values: png, jpeg. Core engine defaults to "png" |
-| `image_dir` | `str` | `None` | Directory for extracted images |
+| `image_format` | `Optional[str]` | `None` | Output format for extracted images. Values: png, jpeg. Core engine defaults to "png" |
+| `image_dir` | `Optional[str]` | `None` | Directory for extracted images |
 | `sanitize` | `bool` | `False` | Enable sensitive data sanitization. Replaces emails, phone numbers, IPs, credit cards, and URLs with placeholders |
-| `pages` | `str` | `None` | Pages to extract (e.g., "1,3,5-7"). Default: all pages |
+| `pages` | `Optional[str]` | `None` | Pages to extract (e.g., "1,3,5-7"). Default: all pages |
 | `include_header_footer` | `bool` | `False` | Include page headers and footers in output |
 | `detect_strikethrough` | `bool` | `False` | Detect strikethrough text and wrap with ~~ in Markdown output (experimental) |
-| `hybrid` | `str` | `None` | Hybrid backend. None = Java-only (default). Values: "docling-fast". Requires a running hybrid backend server |
-| `hybrid_mode` | `str` | `None` | Hybrid triage mode. None = core engine uses "auto" internally. Values: auto (dynamic triage), full (all pages to backend) |
-| `hybrid_url` | `str` | `None` | Hybrid backend server URL (overrides default) |
-| `hybrid_timeout` | `str` | `None` | Hybrid backend request timeout in milliseconds. Core engine defaults to 30000ms (30 seconds) |
+| `hybrid` | `Optional[str]` | `None` | Hybrid backend. None = Java-only (default). Values: "docling-fast". Requires a running hybrid backend server |
+| `hybrid_mode` | `Optional[str]` | `None` | Hybrid triage mode. None = core engine uses "auto" internally. Values: auto (dynamic triage), full (all pages to backend) |
+| `hybrid_url` | `Optional[str]` | `None` | Hybrid backend server URL (overrides default) |
+| `hybrid_timeout` | `Optional[str]` | `None` | Hybrid backend request timeout in milliseconds. Core engine defaults to 30000ms (30 seconds) |
 | `hybrid_fallback` | `bool` | `False` | Opt in to Java fallback on hybrid backend error (default: disabled) |
 
 ## Document Metadata

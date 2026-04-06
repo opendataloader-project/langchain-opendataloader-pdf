@@ -79,14 +79,16 @@ class OpenDataLoaderPDFLoader(BaseLoader):
                 (Valid options are: "json", "text", "html", "markdown")
             quiet: Suppress CLI logging output. Default: False
             content_safety_off: List of content safety filters to disable.
+                Default: None (no filters disabled).
                 (Values: "all", "hidden-text", "off-page", "tiny", "hidden-ocg")
-            password: Password for encrypted PDF files.
+            password: Password for encrypted PDF files. Default: None.
             keep_line_breaks: Preserve original line breaks in extracted text.
             replace_invalid_chars: Replacement character for invalid/unrecognized
                 characters. Default: None (core engine defaults to space)
             use_struct_tree: Use PDF structure tree (tagged PDF) for reading order
                 and semantic structure.
-            table_method: Table detection method.
+            table_method: Table detection method. Default: None, core engine
+                defaults to "default".
                 (Values: "default" (border-based), "cluster" (border + cluster))
             reading_order: Reading order algorithm.
                 (Values: "off", "xycut". Default: None, core engine defaults to "xycut")
@@ -95,8 +97,8 @@ class OpenDataLoaderPDFLoader(BaseLoader):
             image_format: Output format for extracted images.
                 (Values: "png", "jpeg". Default: None, core engine defaults to "png")
             image_dir: Directory where extracted images are saved when using
-                image_output="external". If not set, images are saved alongside
-                the output files in a temporary directory.
+                image_output="external". Default: None (images saved alongside
+                output files in a temporary directory).
             sanitize: Enable sensitive data sanitization. Replaces emails,
                 phone numbers, IPs, credit cards, and URLs with placeholders.
             pages: Pages to extract (e.g., "1,3,5-7"). Default: all pages.
@@ -109,7 +111,8 @@ class OpenDataLoaderPDFLoader(BaseLoader):
                 (core engine uses "auto" internally when not specified).
                 "auto": route only complex pages to backend.
                 "full": route all pages to backend.
-            hybrid_url: Custom backend server URL. Default: http://localhost:5002
+            hybrid_url: Custom backend server URL. Default: None (core engine
+                defaults to http://localhost:5002).
             hybrid_timeout: Backend request timeout in milliseconds (as string).
                 Default: None (core engine defaults to 30000ms / 30 seconds).
             hybrid_fallback: Opt-in to Java fallback on backend failure.
@@ -323,8 +326,10 @@ class OpenDataLoaderPDFLoader(BaseLoader):
                 try:
                     file.unlink()
                 except Exception as e:
+                    # Temp file cleanup failure is non-fatal; log and continue
                     logger.error(f"Error deleting temp file '{file}': {e}")
 
         except Exception as e:
+            # Output processing failure is fatal; re-raise so callers see it
             logger.error(f"Error processing output files: {e}")
             raise

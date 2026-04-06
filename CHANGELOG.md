@@ -17,6 +17,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 - **Breaking**: Minimum dependency bumped to `opendataloader-pdf>=2.1.0` (was `>=2.0.0`) for `detect_strikethrough` support
+- **Behavior**: `lazy_load()` now re-raises output-processing exceptions instead of silently swallowing them — callers may observe `Exception` from document post-processing
 - `split_pages` parameter moved after synced params block (keyword-only usage unaffected)
 - `hybrid_timeout` default: `None` (pass-through to core engine, which defaults to 30000ms / 30 seconds)
 - README AI-AGENT-SUMMARY license: MIT → Apache-2.0
