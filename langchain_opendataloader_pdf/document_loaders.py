@@ -257,7 +257,7 @@ class OpenDataLoaderPDFLoader(BaseLoader):
         try:
             output_dir = tempfile.mkdtemp()
         except OSError as e:
-            logger.error(f"Failed to create temp directory: {e}")
+            logger.error("Failed to create temp directory: %s", e)
             return
 
         try:
@@ -306,8 +306,8 @@ class OpenDataLoaderPDFLoader(BaseLoader):
             except Exception as e:
                 if self.hybrid:
                     raise
-                logger.error(f"Error during conversion: {e}")
-                return
+                logger.error("Error during conversion: %s", e)
+                return  # exits generator; finally still cleans up output_dir
 
             ext_map = {"json": "json", "text": "txt", "html": "html", "markdown": "md"}
             ext = ext_map.get(self.format)
@@ -348,4 +348,7 @@ class OpenDataLoaderPDFLoader(BaseLoader):
             logger.debug("Error processing output files", exc_info=True)
             raise
         finally:
-            shutil.rmtree(output_dir, ignore_errors=True)
+            # Skip cleanup when external images are stored in the temp dir,
+            # otherwise callers would get dangling file-path references.
+            if not (self.image_output == "external" and self.image_dir is None):
+                shutil.rmtree(output_dir, ignore_errors=True)
