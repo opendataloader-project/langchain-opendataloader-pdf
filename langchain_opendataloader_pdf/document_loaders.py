@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+import shutil
 import tempfile
 from collections import defaultdict
 from pathlib import Path
@@ -83,10 +84,11 @@ class OpenDataLoaderPDFLoader(BaseLoader):
                 (Values: "all", "hidden-text", "off-page", "tiny", "hidden-ocg")
             password: Password for encrypted PDF files. Default: None.
             keep_line_breaks: Preserve original line breaks in extracted text.
+                Default: False.
             replace_invalid_chars: Replacement character for invalid/unrecognized
                 characters. Default: None (core engine defaults to space)
             use_struct_tree: Use PDF structure tree (tagged PDF) for reading order
-                and semantic structure.
+                and semantic structure. Default: False.
             table_method: Table detection method. Default: None, core engine
                 defaults to "default".
                 (Values: "default" (border-based), "cluster" (border + cluster))
@@ -99,12 +101,17 @@ class OpenDataLoaderPDFLoader(BaseLoader):
             image_dir: Directory where extracted images are saved when using
                 image_output="external". Default: None (images saved alongside
                 output files in a temporary directory).
-            sanitize: Enable sensitive data sanitization. Replaces emails,
-                phone numbers, IPs, credit cards, and URLs with placeholders.
+            sanitize: Enable sensitive data sanitization. Default: False.
+                Replaces emails, phone numbers, IPs, credit cards, and URLs
+                with placeholders.
             pages: Pages to extract (e.g., "1,3,5-7"). Default: all pages.
             include_header_footer: Include page headers and footers in output.
+                Default: False.
+            detect_strikethrough: Detect strikethrough text and wrap with ~~
+                in Markdown output (experimental). Default: False.
             split_pages: If True, split output into separate Documents per page.
-                Automatically sets the appropriate page separator for the format.
+                Default: True. Automatically sets the appropriate page separator
+                for the format.
             hybrid: Backend for hybrid AI extraction. None = Java-only (default).
                 Values: "docling-fast". Requires a running hybrid backend server.
             hybrid_mode: Triage mode when hybrid is enabled. Default: None
@@ -254,32 +261,40 @@ class OpenDataLoaderPDFLoader(BaseLoader):
                 # Get page separator for split_pages mode
                 page_sep = self._get_page_separator()
 
+                # --- BEGIN SYNCED CONVERT KWARGS ---
+                convert_kwargs = {
+                    "format": [self.format],
+                    "quiet": self.quiet,
+                    "content_safety_off": self.content_safety_off,
+                    "password": self.password,
+                    "keep_line_breaks": self.keep_line_breaks,
+                    "replace_invalid_chars": self.replace_invalid_chars,
+                    "use_struct_tree": self.use_struct_tree,
+                    "table_method": self.table_method,
+                    "reading_order": self.reading_order,
+                    "image_output": self.image_output,
+                    "image_format": self.image_format,
+                    "image_dir": self.image_dir,
+                    "sanitize": self.sanitize,
+                    "pages": self.pages,
+                    "include_header_footer": self.include_header_footer,
+                    "detect_strikethrough": self.detect_strikethrough,
+                    "hybrid": self.hybrid,
+                    "hybrid_mode": self.hybrid_mode,
+                    "hybrid_url": self.hybrid_url,
+                    "hybrid_timeout": self.hybrid_timeout,
+                    "hybrid_fallback": self.hybrid_fallback,
+                }
+                # --- END SYNCED CONVERT KWARGS ---
+                # Omit None values so the core engine applies its own defaults.
+                # Boolean False and explicit values (e.g., image_output="off")
+                # are intentionally kept to pin the wrapper's chosen defaults.
+                convert_kwargs = {k: v for k, v in convert_kwargs.items() if v is not None}
+
                 opendataloader_pdf.convert(
                     input_path=self.file_paths,
                     output_dir=output_dir,
-                    # --- BEGIN SYNCED CONVERT KWARGS ---
-                    format=[self.format],
-                    quiet=self.quiet,
-                    content_safety_off=self.content_safety_off,
-                    password=self.password,
-                    keep_line_breaks=self.keep_line_breaks,
-                    replace_invalid_chars=self.replace_invalid_chars,
-                    use_struct_tree=self.use_struct_tree,
-                    table_method=self.table_method,
-                    reading_order=self.reading_order,
-                    image_output=self.image_output,
-                    image_format=self.image_format,
-                    image_dir=self.image_dir,
-                    sanitize=self.sanitize,
-                    pages=self.pages,
-                    include_header_footer=self.include_header_footer,
-                    detect_strikethrough=self.detect_strikethrough,
-                    hybrid=self.hybrid,
-                    hybrid_mode=self.hybrid_mode,
-                    hybrid_url=self.hybrid_url,
-                    hybrid_timeout=self.hybrid_timeout,
-                    hybrid_fallback=self.hybrid_fallback,
-                    # --- END SYNCED CONVERT KWARGS ---
+                    **convert_kwargs,
                     markdown_page_separator=page_sep,
                     text_page_separator=page_sep,
                     html_page_separator=page_sep,
@@ -328,5 +343,4 @@ class OpenDataLoaderPDFLoader(BaseLoader):
             logger.exception("Error processing output files")
             raise
         finally:
-            import shutil
             shutil.rmtree(output_dir, ignore_errors=True)

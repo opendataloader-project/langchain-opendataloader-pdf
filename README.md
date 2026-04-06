@@ -233,7 +233,7 @@ results = vectorstore.similarity_search("What is the main topic?")
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `file_path` | `str \| List[str]` | — | **(Required)** PDF file path(s) or directories |
+| `file_path` | `str \| Path \| List[str \| Path]` | — | **(Required)** PDF file path(s) or directories |
 | `split_pages` | `bool` | `True` | Split into separate Documents per page |
 | `format` | `str` | `"text"` | Output format. Values: text, markdown, json, html |
 | `quiet` | `bool` | `False` | Suppress console logging output |
