@@ -922,7 +922,7 @@ class TestOpenDataLoaderPDFLoaderHybridErrors:
         loader = OpenDataLoaderPDFLoader(
             file_path="test.pdf", format="json", split_pages=True
         )
-        with pytest.raises(Exception):
+        with pytest.raises(json.JSONDecodeError):
             list(loader.lazy_load())
 
 

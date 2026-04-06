@@ -247,49 +247,49 @@ class OpenDataLoaderPDFLoader(BaseLoader):
                 f"Invalid format '{self.format}'. Valid options are: 'json', 'text', 'html', 'markdown'"
             )
 
-        try:
-            output_dir = tempfile.mkdtemp(dir=tempfile.gettempdir())
-
-            # Get page separator for split_pages mode
-            page_sep = self._get_page_separator()
-
-            opendataloader_pdf.convert(
-                input_path=self.file_paths,
-                output_dir=output_dir,
-                # --- BEGIN SYNCED CONVERT KWARGS ---
-                format=[self.format],
-                quiet=self.quiet,
-                content_safety_off=self.content_safety_off,
-                password=self.password,
-                keep_line_breaks=self.keep_line_breaks,
-                replace_invalid_chars=self.replace_invalid_chars,
-                use_struct_tree=self.use_struct_tree,
-                table_method=self.table_method,
-                reading_order=self.reading_order,
-                image_output=self.image_output,
-                image_format=self.image_format,
-                image_dir=self.image_dir,
-                sanitize=self.sanitize,
-                pages=self.pages,
-                include_header_footer=self.include_header_footer,
-                detect_strikethrough=self.detect_strikethrough,
-                hybrid=self.hybrid,
-                hybrid_mode=self.hybrid_mode,
-                hybrid_url=self.hybrid_url,
-                hybrid_timeout=self.hybrid_timeout,
-                hybrid_fallback=self.hybrid_fallback,
-                # --- END SYNCED CONVERT KWARGS ---
-                markdown_page_separator=page_sep,
-                text_page_separator=page_sep,
-                html_page_separator=page_sep,
-            )
-        except Exception as e:
-            if self.hybrid:
-                raise
-            logger.error(f"Error during conversion: {e}")
-            return
+        output_dir = tempfile.mkdtemp(dir=tempfile.gettempdir())
 
         try:
+            try:
+                # Get page separator for split_pages mode
+                page_sep = self._get_page_separator()
+
+                opendataloader_pdf.convert(
+                    input_path=self.file_paths,
+                    output_dir=output_dir,
+                    # --- BEGIN SYNCED CONVERT KWARGS ---
+                    format=[self.format],
+                    quiet=self.quiet,
+                    content_safety_off=self.content_safety_off,
+                    password=self.password,
+                    keep_line_breaks=self.keep_line_breaks,
+                    replace_invalid_chars=self.replace_invalid_chars,
+                    use_struct_tree=self.use_struct_tree,
+                    table_method=self.table_method,
+                    reading_order=self.reading_order,
+                    image_output=self.image_output,
+                    image_format=self.image_format,
+                    image_dir=self.image_dir,
+                    sanitize=self.sanitize,
+                    pages=self.pages,
+                    include_header_footer=self.include_header_footer,
+                    detect_strikethrough=self.detect_strikethrough,
+                    hybrid=self.hybrid,
+                    hybrid_mode=self.hybrid_mode,
+                    hybrid_url=self.hybrid_url,
+                    hybrid_timeout=self.hybrid_timeout,
+                    hybrid_fallback=self.hybrid_fallback,
+                    # --- END SYNCED CONVERT KWARGS ---
+                    markdown_page_separator=page_sep,
+                    text_page_separator=page_sep,
+                    html_page_separator=page_sep,
+                )
+            except Exception as e:
+                if self.hybrid:
+                    raise
+                logger.error(f"Error during conversion: {e}")
+                return
+
             ext_map = {"json": "json", "text": "txt", "html": "html", "markdown": "md"}
             ext = ext_map.get(self.format)
             if ext is None:
@@ -323,13 +323,10 @@ class OpenDataLoaderPDFLoader(BaseLoader):
                             **({"hybrid": self.hybrid} if self.hybrid else {}),
                         },
                     )
-                try:
-                    file.unlink()
-                except Exception as e:
-                    # Temp file cleanup failure is non-fatal; log and continue
-                    logger.error(f"Error deleting temp file '{file}': {e}")
-
         except Exception as e:
             # Output processing failure is fatal; re-raise so callers see it
             logger.exception("Error processing output files")
             raise
+        finally:
+            import shutil
+            shutil.rmtree(output_dir, ignore_errors=True)
