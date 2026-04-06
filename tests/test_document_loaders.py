@@ -279,7 +279,8 @@ class TestOpenDataLoaderPDFLoaderConvertCall:
         list(loader.lazy_load())
 
         call_kwargs = mock_odl.convert.call_args[1]
-        assert call_kwargs["image_dir"] is None
+        # None values are omitted from kwargs (pass-through to core engine defaults)
+        assert "image_dir" not in call_kwargs
 
     @patch("langchain_opendataloader_pdf.document_loaders.opendataloader_pdf")
     @patch("langchain_opendataloader_pdf.document_loaders.tempfile.mkdtemp")
@@ -392,10 +393,12 @@ class TestOpenDataLoaderPDFLoaderConvertCall:
         list(loader.lazy_load())
 
         call_kwargs = mock_odl.convert.call_args[1]
-        assert call_kwargs["hybrid"] is None
-        assert call_kwargs["hybrid_mode"] is None
-        assert call_kwargs["hybrid_url"] is None
-        assert call_kwargs["hybrid_timeout"] is None
+        # None values are omitted from kwargs (pass-through to core engine defaults)
+        assert "hybrid" not in call_kwargs
+        assert "hybrid_mode" not in call_kwargs
+        assert "hybrid_url" not in call_kwargs
+        assert "hybrid_timeout" not in call_kwargs
+        # False is not None, so it IS passed
         assert call_kwargs["hybrid_fallback"] is False
 
     @patch("langchain_opendataloader_pdf.document_loaders.opendataloader_pdf")
@@ -907,6 +910,26 @@ class TestOpenDataLoaderPDFLoaderHybridErrors:
         # Should NOT raise — existing silent behavior
         docs = list(loader.lazy_load())
         assert docs == []
+
+    @patch("langchain_opendataloader_pdf.document_loaders.opendataloader_pdf")
+    @patch("langchain_opendataloader_pdf.document_loaders.tempfile.mkdtemp")
+    def test_output_processing_error_reraise(self, mock_mkdtemp, mock_odl, tmp_path):
+        """Output-processing errors (after conversion) must propagate to callers."""
+        mock_mkdtemp.return_value = str(tmp_path)
+        mock_odl.convert = MagicMock()
+
+        # Create a malformed output file that will cause json.loads to fail
+        bad_file = tmp_path / "test.json"
+        bad_file.write_text("not valid json", encoding="utf-8")
+
+        loader = OpenDataLoaderPDFLoader(
+            file_path="test.pdf", format="json", split_pages=True
+        )
+        with pytest.raises(json.JSONDecodeError):
+            list(loader.lazy_load())
+
+        # Verify tmpdir was cleaned up even after error
+        assert not tmp_path.exists()
 
 
 class TestOpenDataLoaderPDFLoaderPathHandling:
