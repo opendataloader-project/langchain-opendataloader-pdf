@@ -81,7 +81,8 @@ jobs:
 
       - name: Update pyproject.toml dependency
         run: |
-          sed -i "s/\"opendataloader-pdf>=.*\"/\"opendataloader-pdf>=$VERSION\"/" pyproject.toml
+          ESCAPED_VER=$(printf '%s\n' "$VERSION" | sed 's/[&/\]/\\&/g')
+          sed -i "s/\"opendataloader-pdf>=.*\"/\"opendataloader-pdf>=${ESCAPED_VER}\"/" pyproject.toml
 
       - name: Check for changes
         id: changes
@@ -213,13 +214,13 @@ jobs:
         env:
           STATUS_RESULT: ${{ steps.status.outputs.result }}
         run: |
-          cat > /tmp/pr-body.md << ENDOFBODY
-## Sync with opendataloader-pdf v${VERSION}
-
-${STATUS_RESULT}
-
-Auto-generated from [opendataloader-pdf v${VERSION}](https://github.com/opendataloader-project/opendataloader-pdf/releases/tag/v${VERSION}).
-ENDOFBODY
+          {
+            echo "## Sync with opendataloader-pdf v${VERSION}"
+            echo ""
+            echo "${STATUS_RESULT}"
+            echo ""
+            echo "Auto-generated from [opendataloader-pdf v${VERSION}](https://github.com/opendataloader-project/opendataloader-pdf/releases/tag/v${VERSION})."
+          } > /tmp/pr-body.md
 
           if [ "$BREAKING" == "true" ]; then
             echo "" >> /tmp/pr-body.md
@@ -244,11 +245,11 @@ ENDOFBODY
           [ "$BREAKING" == "true" ] && LABELS="$LABELS,breaking-change"
 
           gh pr create \
-            --title "sync: update to opendataloader-pdf v$VERSION" \
+            --title "sync: update to opendataloader-pdf v${VERSION}" \
             --body-file /tmp/pr-body.md \
             --base main \
-            $DRAFT_FLAG \
-            --label "$LABELS"
+            ${DRAFT_FLAG} \
+            --label "${LABELS}"
 
       - name: Notify Slack
         if: always() && env.SLACK_URL != ''
