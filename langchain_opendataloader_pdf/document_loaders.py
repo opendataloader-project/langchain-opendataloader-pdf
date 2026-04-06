@@ -331,5 +331,5 @@ class OpenDataLoaderPDFLoader(BaseLoader):
 
         except Exception as e:
             # Output processing failure is fatal; re-raise so callers see it
-            logger.error(f"Error processing output files: {e}")
+            logger.exception("Error processing output files")
             raise

@@ -908,6 +908,23 @@ class TestOpenDataLoaderPDFLoaderHybridErrors:
         docs = list(loader.lazy_load())
         assert docs == []
 
+    @patch("langchain_opendataloader_pdf.document_loaders.opendataloader_pdf")
+    @patch("langchain_opendataloader_pdf.document_loaders.tempfile.mkdtemp")
+    def test_output_processing_error_reraise(self, mock_mkdtemp, mock_odl, tmp_path):
+        """Output-processing errors (after conversion) must propagate to callers."""
+        mock_mkdtemp.return_value = str(tmp_path)
+        mock_odl.convert = MagicMock()
+
+        # Create a malformed output file that will cause json.loads to fail
+        bad_file = tmp_path / "test.json"
+        bad_file.write_text("not valid json", encoding="utf-8")
+
+        loader = OpenDataLoaderPDFLoader(
+            file_path="test.pdf", format="json", split_pages=True
+        )
+        with pytest.raises(Exception):
+            list(loader.lazy_load())
+
 
 class TestOpenDataLoaderPDFLoaderPathHandling:
     """Test file_path handling with Path objects and convert call."""
