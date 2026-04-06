@@ -35,8 +35,8 @@ jobs:
     steps:
       - name: Validate version format
         run: |
-          if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-            echo "::error::Invalid version format: '$VERSION'. Expected semver (e.g., 2.3.0)"
+          if ! echo "${VERSION}" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Invalid version format: '${VERSION}'. Expected semver (e.g., 2.3.0)"
             exit 1
           fi
 
@@ -76,12 +76,15 @@ jobs:
             --config upstream/scripts/langchain-sync-config.json \
             --target langchain_opendataloader_pdf/document_loaders.py \
             --readme README.md \
-            --version "$VERSION" \
+            --version "${VERSION}" \
             --pr-body .sync-report/pr-body.md
 
       - name: Update pyproject.toml dependency
         run: |
-          sed -i "s/\"opendataloader-pdf>=.*\"/\"opendataloader-pdf>=$VERSION\"/" pyproject.toml
+          # Defense-in-depth: semver validation above blocks metacharacters,
+          # but escape anyway in case the validation regex is ever relaxed.
+          ESCAPED_VER=$(printf '%s\n' "${VERSION}" | sed 's/[&/\]/\\&/g')
+          sed -i "s/\"opendataloader-pdf>=.*\"/\"opendataloader-pdf>=${ESCAPED_VER}\"/" pyproject.toml
 
       - name: Check for changes
         id: changes
@@ -113,14 +116,14 @@ jobs:
         if: steps.changes.outputs.changed == 'true'
         id: branch
         run: |
-          BRANCH="sync/v$VERSION"
+          BRANCH="sync/v${VERSION}"
           echo "name=$BRANCH" >> $GITHUB_OUTPUT
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH"
           git add langchain_opendataloader_pdf/document_loaders.py pyproject.toml README.md
           git add .sync-report/ || true
-          git commit -m "sync: update to opendataloader-pdf v$VERSION"
+          git commit -m "sync: update to opendataloader-pdf v${VERSION}"
           git push origin "$BRANCH" --force-with-lease
 
   # =================================================================
@@ -155,20 +158,20 @@ jobs:
       - name: Wait for PyPI availability
         run: |
           for i in $(seq 1 20); do
-            if pip install --dry-run "opendataloader-pdf==$VERSION" 2>/dev/null; then
-              echo "Version $VERSION available on PyPI"
+            if pip install --dry-run "opendataloader-pdf==${VERSION}" 2>/dev/null; then
+              echo "Version ${VERSION} available on PyPI"
               exit 0
             fi
             echo "Attempt $i/20: waiting 30s..."
             sleep 30
           done
-          echo "::error::PyPI version $VERSION not available after 10 minutes"
+          echo "::error::PyPI version ${VERSION} not available after 10 minutes"
           exit 1
 
       - name: Install dependencies
         run: |
           pip install -e . pytest pytest-socket
-          pip install "opendataloader-pdf>=$VERSION"
+          pip install "opendataloader-pdf>=${VERSION}"
 
       - name: Run unit tests
         run: pytest tests/test_document_loaders.py -v --disable-socket --allow-unix-socket
@@ -213,13 +216,13 @@ jobs:
         env:
           STATUS_RESULT: ${{ steps.status.outputs.result }}
         run: |
-          cat > /tmp/pr-body.md << ENDOFBODY
-## Sync with opendataloader-pdf v${VERSION}
-
-${STATUS_RESULT}
-
-Auto-generated from [opendataloader-pdf v${VERSION}](https://github.com/opendataloader-project/opendataloader-pdf/releases/tag/v${VERSION}).
-ENDOFBODY
+          {
+            echo "## Sync with opendataloader-pdf v${VERSION}"
+            echo ""
+            echo "${STATUS_RESULT}"
+            echo ""
+            echo "Auto-generated from [opendataloader-pdf v${VERSION}](https://github.com/opendataloader-project/opendataloader-pdf/releases/tag/v${VERSION})."
+          } > /tmp/pr-body.md
 
           if [ "$BREAKING" == "true" ]; then
             echo "" >> /tmp/pr-body.md
@@ -243,12 +246,14 @@ ENDOFBODY
           LABELS="sync,automated"
           [ "$BREAKING" == "true" ] && LABELS="$LABELS,breaking-change"
 
+          # DRAFT_FLAG intentionally unquoted: empty string must produce
+          # zero arguments, not an empty-string argument that gh rejects.
           gh pr create \
-            --title "sync: update to opendataloader-pdf v$VERSION" \
+            --title "sync: update to opendataloader-pdf v${VERSION}" \
             --body-file /tmp/pr-body.md \
             --base main \
-            $DRAFT_FLAG \
-            --label "$LABELS"
+            ${DRAFT_FLAG} \
+            --label "${LABELS}"
 
       - name: Notify Slack
         if: always() && env.SLACK_URL != ''
