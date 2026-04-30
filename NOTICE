@@ -13,14 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-This product includes 'LangChain OpenDataLoader PDF' distributed under
-the Apache License 2.0, along with various third-party software
-components. For the complete source code and detailed copyright notices
-and license information for each third-party component, please visit:
-
-    https://github.com/opendataloader-project/langchain-opendataloader-pdf
-
-
 THIRD-PARTY LICENSES
 
 This project includes third-party libraries and components, licensed under
