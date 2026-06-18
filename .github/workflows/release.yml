@@ -17,7 +17,7 @@ jobs:
       # 1. SETUP
       # =================================================================
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Initialize VERSION
         run: |

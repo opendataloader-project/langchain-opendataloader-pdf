@@ -41,12 +41,12 @@ jobs:
           fi
 
       - name: Checkout langchain-opendataloader-pdf
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Checkout opendataloader-pdf (sparse)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: opendataloader-project/opendataloader-pdf
           ref: v${{ env.VERSION }}
@@ -146,7 +146,7 @@ jobs:
 
     steps:
       - name: Checkout sync branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ needs.generate.outputs.branch }}
 
@@ -196,7 +196,7 @@ jobs:
       BREAKING: ${{ needs.generate.outputs.breaking }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ needs.generate.outputs.branch }}
           fetch-depth: 2
