@@ -185,10 +185,16 @@ class OpenDataLoaderPDFLoader(BaseLoader):
         # First part (index 0) is content before first separator (usually empty)
         # Then alternating: page_num (odd indices), content (even indices > 0)
 
-        # Handle content before first separator (if any, treat as page 1)
-        if parts[0].strip():
+        # Handle content before first separator (if any, treat as page 1).
+        # In HTML output the first marker sits after <body>, so parts[0] is the
+        # document preamble (<!DOCTYPE>, <head>, ...) rather than page content —
+        # emitting it would yield a second, contentless page 1.
+        preamble = parts[0].strip()
+        if self.format == "html" and preamble.startswith("<!DOCTYPE"):
+            preamble = ""
+        if preamble:
             yield Document(
-                page_content=parts[0].strip(),
+                page_content=preamble,
                 metadata={
                     "source": source_name,
                     "format": self.format,

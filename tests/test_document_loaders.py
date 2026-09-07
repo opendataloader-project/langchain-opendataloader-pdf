@@ -576,6 +576,46 @@ class TestOpenDataLoaderPDFLoaderSplitPages:
         assert docs[0].metadata["page"] == 1
         assert docs[1].metadata["page"] == 3
 
+    def test_split_into_pages_html_escaped_separator(self):
+        """Engine >= 2.5 HTML-escapes the marker and pads it with spaces."""
+        loader = OpenDataLoaderPDFLoader(
+            file_path="test.pdf", format="html", split_pages=True
+        )
+
+        content = (
+            "\n &lt;&lt;&lt;ODL_PAGE_BREAK_1&gt;&gt;&gt; \n"
+            "<p>Page 1 content</p>"
+            "\n &lt;&lt;&lt;ODL_PAGE_BREAK_2&gt;&gt;&gt; \n"
+            "<p>Page 2 content</p>"
+        )
+
+        docs = list(loader._split_into_pages(content, "test.pdf"))
+
+        assert len(docs) == 2
+        assert docs[0].page_content == "<p>Page 1 content</p>"
+        assert docs[0].metadata["page"] == 1
+        assert docs[1].page_content == "<p>Page 2 content</p>"
+        assert docs[1].metadata["page"] == 2
+
+    def test_split_into_pages_html_preamble_is_not_a_page(self):
+        """The <head> block before the first marker must not become a page 1."""
+        loader = OpenDataLoaderPDFLoader(
+            file_path="test.pdf", format="html", split_pages=True
+        )
+
+        content = (
+            '<!DOCTYPE html>\n<html lang="und">\n<head>\n'
+            "<title>test.pdf</title>\n</head>\n<body>"
+            "\n &lt;&lt;&lt;ODL_PAGE_BREAK_1&gt;&gt;&gt; \n"
+            "<p>Page 1 content</p>"
+        )
+
+        docs = list(loader._split_into_pages(content, "test.pdf"))
+
+        assert len(docs) == 1
+        assert [d.metadata["page"] for d in docs] == [1]
+        assert docs[0].page_content == "<p>Page 1 content</p>"
+
     @patch("langchain_opendataloader_pdf.document_loaders.opendataloader_pdf")
     @patch("langchain_opendataloader_pdf.document_loaders.tempfile.mkdtemp")
     def test_split_pages_sets_page_separator(self, mock_mkdtemp, mock_odl):
