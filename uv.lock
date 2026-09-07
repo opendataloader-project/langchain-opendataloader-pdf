@@ -435,10 +435,11 @@ wheels = [
 
 [[package]]
 name = "opendataloader-pdf"
-version = "2.2.0"
+version = "2.5.7"
 source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/cd/0c/ee6e9f842ff0c29ca205ce8ad192c79fadf010941fcc97dab55a3935f18d/opendataloader_pdf-2.5.7.tar.gz", hash = "sha256:12fcaedd03d4627925a6b5626e09344a4deb7882f39641cc902032b2d2ddc2b0", size = 22609282, upload-time = "2026-09-01T06:15:39.951Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/57/ba/0f113b74908527407a14b230516fb1d6df896b131815ae2488eabc07a48c/opendataloader_pdf-2.2.0-py3-none-any.whl", hash = "sha256:c4328c95f04be86fcebb06b58391f313bb2240527b941f176ba5e569c8b8765c", size = 22441488, upload-time = "2026-03-27T07:28:05.46Z" },
+    { url = "https://files.pythonhosted.org/packages/6e/0c/05e4e364dd175eaee548696c0717e2b1580149778c80726acafd229e8950/opendataloader_pdf-2.5.7-py3-none-any.whl", hash = "sha256:30259124325ff75d3b6f6df09f52f6ec9bfb0ae1adc10fce010abebeefbacd30", size = 22623505, upload-time = "2026-09-01T06:15:35.536Z" },
 ]
 
 [[package]]
