@@ -171,6 +171,12 @@ class OpenDataLoaderPDFLoader(BaseLoader):
         separator_pattern = re.escape(self._PAGE_SPLIT_SEPARATOR).replace(
             re.escape("%page-number%"), r"(\d+)"
         )
+        # HTML output escapes the angle brackets and pads the marker with spaces
+        # (engine >= 2.5), so "<<<MARKER>>>" arrives as " &lt;&lt;&lt;MARKER&gt;&gt;&gt; ".
+        # Accept both spellings; text/markdown/json still emit the raw form.
+        separator_pattern = separator_pattern.replace(
+            re.escape("<<<"), r"[ ]?(?:<<<|&lt;&lt;&lt;)"
+        ).replace(re.escape(">>>"), r"(?:>>>|&gt;&gt;&gt;)[ ]?")
 
         # Split content using the separator pattern
         parts = re.split(separator_pattern, content)
