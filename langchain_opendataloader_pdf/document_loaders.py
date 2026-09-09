@@ -173,10 +173,12 @@ class OpenDataLoaderPDFLoader(BaseLoader):
         )
         # HTML output escapes the angle brackets and pads the marker with spaces
         # (engine >= 2.5), so "<<<MARKER>>>" arrives as " &lt;&lt;&lt;MARKER&gt;&gt;&gt; ".
-        # Accept both spellings; text/markdown/json still emit the raw form.
-        separator_pattern = separator_pattern.replace(
-            re.escape("<<<"), r"[ ]?(?:<<<|&lt;&lt;&lt;)"
-        ).replace(re.escape(">>>"), r"(?:>>>|&gt;&gt;&gt;)[ ]?")
+        # Only HTML is escaped, so widening the pattern is scoped to it: text,
+        # markdown and json keep matching the raw marker exactly as before.
+        if self.format == "html":
+            separator_pattern = separator_pattern.replace(
+                re.escape("<<<"), r"[ ]?(?:<<<|&lt;&lt;&lt;)"
+            ).replace(re.escape(">>>"), r"(?:>>>|&gt;&gt;&gt;)[ ]?")
 
         # Split content using the separator pattern
         parts = re.split(separator_pattern, content)
@@ -186,11 +188,15 @@ class OpenDataLoaderPDFLoader(BaseLoader):
         # Then alternating: page_num (odd indices), content (even indices > 0)
 
         # Handle content before first separator (if any, treat as page 1).
-        # In HTML output the first marker sits after <body>, so parts[0] is the
-        # document preamble (<!DOCTYPE>, <head>, ...) rather than page content —
-        # emitting it would yield a second, contentless page 1.
+        # In HTML output the engine puts the first marker straight after <body>, so
+        # once a marker has matched, parts[0] is the document preamble (<!DOCTYPE>,
+        # <head>, <body>) and never page content — emitting it would yield a second,
+        # contentless page 1. The check is on the format alone, not on a <!DOCTYPE
+        # prefix: a prefix test misses a lowercase doctype or an output that omits it,
+        # and lets the preamble through as a duplicate page 1.
+        # With no marker at all, parts[0] is the whole document and must be kept.
         preamble = parts[0].strip()
-        if self.format == "html" and preamble.startswith("<!DOCTYPE"):
+        if self.format == "html" and len(parts) > 1:
             preamble = ""
         if preamble:
             yield Document(

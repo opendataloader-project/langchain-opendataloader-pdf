@@ -616,6 +616,62 @@ class TestOpenDataLoaderPDFLoaderSplitPages:
         assert [d.metadata["page"] for d in docs] == [1]
         assert docs[0].page_content == "<p>Page 1 content</p>"
 
+    def test_markerless_html_still_yields_the_document(self):
+        """No marker means one page — the preamble guard must not discard it."""
+        loader = OpenDataLoaderPDFLoader(
+            file_path="test.pdf", format="html", split_pages=True
+        )
+
+        content = (
+            '<!DOCTYPE html>\n<html lang="und">\n<head>\n</head>\n<body>'
+            "<p>The only page</p></body>\n</html>"
+        )
+
+        docs = list(loader._split_into_pages(content, "test.pdf"))
+
+        assert len(docs) == 1
+        assert "The only page" in docs[0].page_content
+        assert docs[0].metadata["page"] == 1
+
+    @pytest.mark.parametrize(
+        "preamble",
+        [
+            '<!DOCTYPE html>\n<html lang="und">\n<head>\n</head>\n<body>',
+            '<!doctype html>\n<html lang="und">\n<head>\n</head>\n<body>',
+            "<html>\n<head>\n</head>\n<body>",
+        ],
+        ids=["uppercase-doctype", "lowercase-doctype", "no-doctype"],
+    )
+    def test_html_preamble_never_becomes_a_page(self, preamble):
+        """The preamble is identified by the format, not by a <!DOCTYPE prefix."""
+        loader = OpenDataLoaderPDFLoader(
+            file_path="test.pdf", format="html", split_pages=True
+        )
+
+        content = (
+            preamble + "\n &lt;&lt;&lt;ODL_PAGE_BREAK_1&gt;&gt;&gt; \n<p>Page 1</p>"
+            "\n &lt;&lt;&lt;ODL_PAGE_BREAK_2&gt;&gt;&gt; \n<p>Page 2</p>"
+        )
+
+        docs = list(loader._split_into_pages(content, "test.pdf"))
+
+        assert [d.metadata["page"] for d in docs] == [1, 2]
+        assert docs[0].page_content == "<p>Page 1</p>"
+
+    def test_escaped_marker_is_not_matched_outside_html(self):
+        """Text, markdown and json are not escaped — the raw marker stays the contract."""
+        content = (
+            "\n &lt;&lt;&lt;ODL_PAGE_BREAK_1&gt;&gt;&gt; \nfirst"
+            "\n &lt;&lt;&lt;ODL_PAGE_BREAK_2&gt;&gt;&gt; \nsecond"
+        )
+
+        for fmt in ("text", "markdown"):
+            loader = OpenDataLoaderPDFLoader(
+                file_path="test.pdf", format=fmt, split_pages=True
+            )
+            docs = list(loader._split_into_pages(content, "test.pdf"))
+            assert len(docs) == 1, f"{fmt} must not split on the escaped marker"
+
     @patch("langchain_opendataloader_pdf.document_loaders.opendataloader_pdf")
     @patch("langchain_opendataloader_pdf.document_loaders.tempfile.mkdtemp")
     def test_split_pages_sets_page_separator(self, mock_mkdtemp, mock_odl):
