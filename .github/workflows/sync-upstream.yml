@@ -149,6 +149,8 @@ jobs:
         uses: actions/checkout@v6
         with:
           ref: ${{ needs.generate.outputs.branch }}
+          # Nothing here pushes, and the steps below run the branch's code.
+          persist-credentials: false
 
       # No `cache: pip`: this job runs code from the sync branch, and a cache
       # saved here is scoped to the default branch, where every other workflow
