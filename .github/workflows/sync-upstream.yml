@@ -90,9 +90,9 @@ jobs:
         id: changes
         run: |
           if git diff --quiet; then
-            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "changed=false" >> "$GITHUB_OUTPUT"
           else
-            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "changed=true" >> "$GITHUB_OUTPUT"
             echo "Changes detected:"
             git diff --stat
           fi
@@ -105,11 +105,11 @@ jobs:
             | grep "self\." | sed 's/.*self\.\([a-z_]*\).*/\1/' | sort > /tmp/params-after.txt
           REMOVED=$(comm -23 /tmp/params-before.txt /tmp/params-after.txt)
           if [ -n "$REMOVED" ]; then
-            echo "detected=true" >> $GITHUB_OUTPUT
+            echo "detected=true" >> "$GITHUB_OUTPUT"
             echo "⚠️ Breaking: removed params: $REMOVED"
             echo "$REMOVED" > .sync-report/breaking-changes.txt
           else
-            echo "detected=false" >> $GITHUB_OUTPUT
+            echo "detected=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Create branch and push
@@ -117,7 +117,7 @@ jobs:
         id: branch
         run: |
           BRANCH="sync/v${VERSION}"
-          echo "name=$BRANCH" >> $GITHUB_OUTPUT
+          echo "name=$BRANCH" >> "$GITHUB_OUTPUT"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH"
@@ -207,11 +207,11 @@ jobs:
         id: status
         run: |
           if [ "$TEST_RESULT" == "success" ]; then
-            echo "draft=false" >> $GITHUB_OUTPUT
-            echo "result=✅ All tests passed" >> $GITHUB_OUTPUT
+            echo "draft=false" >> "$GITHUB_OUTPUT"
+            echo "result=✅ All tests passed" >> "$GITHUB_OUTPUT"
           else
-            echo "draft=true" >> $GITHUB_OUTPUT
-            echo "result=❌ Tests failed" >> $GITHUB_OUTPUT
+            echo "draft=true" >> "$GITHUB_OUTPUT"
+            echo "result=❌ Tests failed" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Build PR body
@@ -232,11 +232,13 @@ jobs:
             cat .sync-report/breaking-changes.txt >> /tmp/pr-body.md 2>/dev/null || echo "See diff for details" >> /tmp/pr-body.md
           fi
 
-          echo "" >> /tmp/pr-body.md
-          echo "### Changes" >> /tmp/pr-body.md
-          echo '```' >> /tmp/pr-body.md
-          git diff main...HEAD --stat >> /tmp/pr-body.md
-          echo '```' >> /tmp/pr-body.md
+          {
+            echo ""
+            echo "### Changes"
+            echo '```'
+            git diff main...HEAD --stat
+            echo '```'
+          } >> /tmp/pr-body.md
 
       - name: Create pull request
         env:
