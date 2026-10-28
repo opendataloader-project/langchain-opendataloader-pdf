@@ -150,10 +150,12 @@ jobs:
         with:
           ref: ${{ needs.generate.outputs.branch }}
 
+      # No `cache: pip`: this job runs code from the sync branch, and a cache
+      # saved here is scoped to the default branch, where every other workflow
+      # would restore it (CodeQL actions/cache-poisoning/poisonable-step).
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-          cache: pip
 
       - name: Wait for PyPI availability
         run: |
