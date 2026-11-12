@@ -727,6 +727,8 @@ class TestOpenDataLoaderPDFLoaderSplitPages:
         docs = list(loader._split_into_pages(content, "test.pdf"))
 
         assert [d.metadata["page"] for d in docs] == [1, 2]
+        # Neither long marker splits: both stay in the text of page 1.
+        assert docs[0].page_content.count(digits) == 2
 
     @patch("langchain_opendataloader_pdf.document_loaders.opendataloader_pdf")
     @patch("langchain_opendataloader_pdf.document_loaders.tempfile.mkdtemp")
