@@ -9,13 +9,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 ### Added
 - `detect_strikethrough` parameter (from opendataloader-pdf v2.1.0)
 - Sync markers for automated option synchronization with opendataloader-pdf
-- CI: `test.yml` — unit tests on every PR (Python 3.10, 3.12, 3.13)
+- CI: `test.yml` — unit tests on every PR (Python 3.11, 3.13)
 - CI: `test-full.yml` — multi-platform full test (manual trigger)
 - CI: `sync-upstream.yml` — automated code generation + PR on upstream release
 - Regression snapshot tests
 - pytest-socket for network isolation in unit tests
 
 ### Changed
+- **Breaking**: Python 3.11 or later is required (was 3.10), as opendataloader-pdf 2.5.17 and later require it
 - **Breaking**: Minimum dependency bumped to `opendataloader-pdf>=2.1.0` (was `>=2.0.0`) for `detect_strikethrough` support
 - **Behavior**: `lazy_load()` now re-raises output-processing exceptions instead of silently swallowing them — callers may observe `Exception` from document post-processing
 - `split_pages` parameter moved after synced params block (keyword-only usage unaffected)

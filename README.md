@@ -6,7 +6,7 @@ solves: [Load PDFs as LangChain Document objects for RAG pipelines, structured P
 input: PDF files (digital, tagged)
 output: LangChain Document objects (text, Markdown, JSON with bounding boxes, HTML)
 sdk: Python
-requirements: Python 3.10+, Java 11+
+requirements: Python 3.11+, Java 11+
 key-differentiators: [LangChain-native BaseLoader, per-page Document splitting, all opendataloader-pdf extraction features, batch file/directory input]
 -->
 
@@ -31,7 +31,7 @@ For the full feature set of the core engine (hybrid AI mode, OCR, formula extrac
 
 ## Requirements
 
-- Python >= 3.10
+- Python >= 3.11
 - Java 11+ available on system `PATH`
 
 ## Installation
