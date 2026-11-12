@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+import secrets
 import shutil
 import tempfile
 from collections import defaultdict
@@ -154,8 +155,14 @@ class OpenDataLoaderPDFLoader(BaseLoader):
         # --- END SYNCED ASSIGNMENTS ---
         self.split_pages = split_pages
 
-    # Internal separator used for page splitting (unique enough to avoid collisions)
-    _PAGE_SPLIT_SEPARATOR = "\n<<<ODL_PAGE_BREAK_%page-number%>>>\n"
+    # Internal separator used for page splitting. The text of a PDF can contain
+    # any string, also a fixed marker, so the marker carries a random token that
+    # is made once for each process: text in a document cannot predict it, and
+    # only the markers that the engine writes split pages. The engine replaces
+    # only %page-number%, and the split removes the markers from the output.
+    _PAGE_SPLIT_SEPARATOR = (
+        f"\n<<<ODL_PAGE_BREAK_{secrets.token_hex(8)}_%page-number%>>>\n"
+    )
 
     def _get_page_separator(self) -> Optional[str]:
         """Get the page separator for split_pages mode."""
@@ -167,9 +174,11 @@ class OpenDataLoaderPDFLoader(BaseLoader):
         """Split content by page separator and yield Documents for each page."""
         # Build regex pattern to match separator with page number
         # The separator appears BEFORE each page's content with that page's number
-        # e.g., "\n<<<ODL_PAGE_BREAK_1>>>\nPage 1 content\n<<<ODL_PAGE_BREAK_2>>>\nPage 2 content"
+        # e.g., "\n<<<ODL_PAGE_BREAK_<token>_1>>>\nPage 1 content\n<<<ODL_PAGE_BREAK_<token>_2>>>\nPage 2 content"
+        # At most 9 digits: int() raises ValueError for a number of more than
+        # 4300 digits, and no document has 10^9 pages.
         separator_pattern = re.escape(self._PAGE_SPLIT_SEPARATOR).replace(
-            re.escape("%page-number%"), r"(\d+)"
+            re.escape("%page-number%"), r"(\d{1,9})"
         )
         # HTML output escapes the angle brackets and pads the marker with spaces
         # (engine >= 2.5), so "<<<MARKER>>>" arrives as " &lt;&lt;&lt;MARKER&gt;&gt;&gt; ".
