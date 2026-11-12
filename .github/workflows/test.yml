@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.10', '3.12', '3.13']
+        python-version: ['3.11', '3.13']
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -48,12 +48,14 @@ jobs:
 
       - uses: actions/setup-python@v6
         with:
-          python-version: '3.10'
+          python-version: '3.11'
           cache: pip
 
       - name: Install minimum dependency versions
         run: |
-          pip install "langchain-core==1.0.0" "opendataloader-pdf==2.1.0" pytest pytest-socket
+          # The lowest opendataloader-pdf that pyproject.toml allows; a sync raises it.
+          ODL_MIN=$(python -c 'import re, tomllib; deps = tomllib.load(open("pyproject.toml", "rb"))["project"]["dependencies"]; print(next(re.match(r"opendataloader-pdf>=([0-9.]+)", d).group(1) for d in deps if d.startswith("opendataloader-pdf>=")))')
+          pip install "langchain-core==1.0.0" "opendataloader-pdf==${ODL_MIN}" pytest pytest-socket
           pip install -e . --no-deps
 
       - name: Run unit tests with minimum deps
