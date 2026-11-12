@@ -159,7 +159,7 @@ class OpenDataLoaderPDFLoader(BaseLoader):
     # any string, also a fixed marker, so the marker carries a random token that
     # is made once for each process: text in a document cannot predict it, and
     # only the markers that the engine writes split pages. The engine replaces
-    # only %page-number%, and the split removes the markers from the output.
+    # only %page-number%, and the split removes each marker that it matches.
     _PAGE_SPLIT_SEPARATOR = (
         f"\n<<<ODL_PAGE_BREAK_{secrets.token_hex(8)}_%page-number%>>>\n"
     )
