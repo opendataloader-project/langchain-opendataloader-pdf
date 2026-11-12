@@ -54,7 +54,18 @@ jobs:
       - name: Install minimum dependency versions
         run: |
           # The lowest opendataloader-pdf that pyproject.toml allows; a sync raises it.
-          ODL_MIN=$(python -c 'import re, tomllib; deps = tomllib.load(open("pyproject.toml", "rb"))["project"]["dependencies"]; print(next(re.match(r"opendataloader-pdf>=([0-9.]+)", d).group(1) for d in deps if d.startswith("opendataloader-pdf>=")))')
+          ODL_MIN=$(python - <<'PY'
+          import re, sys, tomllib
+          deps = tomllib.load(open("pyproject.toml", "rb"))["project"]["dependencies"]
+          for dep in deps:
+              m = re.match(r"opendataloader-pdf(\[[^\]]*\])?\s*>=\s*([^,;\s]+)", dep)
+              if m:
+                  print(m.group(2))
+                  break
+          else:
+              sys.exit("pyproject.toml has no opendataloader-pdf>= floor for min-dep-test")
+          PY
+          )
           pip install "langchain-core==1.0.0" "opendataloader-pdf==${ODL_MIN}" pytest pytest-socket
           pip install -e . --no-deps
 
