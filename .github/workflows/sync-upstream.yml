@@ -133,13 +133,15 @@ jobs:
   # default branch (repository_dispatch, workflow_dispatch), so code of the
   # sync branch that ran here could write to the Actions cache that every
   # workflow on main restores (CodeQL actions/cache-poisoning/poisonable-step).
-  # The Test workflow runs on the sync branch instead: its cache is scoped to
-  # that branch, and its checks show on the pull request.
+  # The Test workflow runs on the sync branch instead (workflow_dispatch): its
+  # cache is scoped to that branch. Its checks are not in the checks list of
+  # the pull request, so this job waits for the run, comments its result on
+  # the pull request, and makes the pull request a draft if a test fails.
   create-pr:
     needs: generate
     if: needs.generate.outputs.changed == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     permissions:
       contents: read
       pull-requests: write
@@ -183,7 +185,7 @@ jobs:
           {
             echo "## Sync with opendataloader-pdf v${VERSION}"
             echo ""
-            echo "The Test workflow runs on this branch after this pull request is created. Its results are in the checks below."
+            echo "The Test workflow runs on this branch after this pull request is created. A comment on this pull request gives its result."
             echo ""
             echo "Auto-generated from [opendataloader-pdf v${VERSION}](https://github.com/opendataloader-project/opendataloader-pdf/releases/tag/v${VERSION})."
           } > /tmp/pr-body.md
@@ -214,7 +216,38 @@ jobs:
             --label "${LABELS}"
 
       - name: Run the Test workflow on the sync branch
-        run: gh workflow run test.yml --ref "$BRANCH"
+        id: tests
+        run: |
+          SHA=$(git rev-parse HEAD)
+          list_runs() {
+            gh run list --workflow test.yml --branch "$BRANCH" --event workflow_dispatch \
+              --commit "$SHA" --limit 20 --json databaseId --jq '.[].databaseId'
+          }
+          # Runs of earlier dispatches on this commit, for example of a re-run.
+          OLD=" $(list_runs | tr '\n' ' ') "
+          gh workflow run test.yml --ref "$BRANCH"
+          # The run of the dispatch can take a few seconds to appear.
+          RUN_ID=""
+          for _ in $(seq 1 24); do
+            for id in $(list_runs); do
+              case "$OLD" in *" $id "*) ;; *) RUN_ID=$id; break ;; esac
+            done
+            [ -n "$RUN_ID" ] && break
+            sleep 5
+          done
+          if [ -z "$RUN_ID" ]; then
+            echo "::error::The Test workflow did not start on ${BRANCH}"
+            exit 1
+          fi
+          RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}"
+          if gh run watch "$RUN_ID" --exit-status > /dev/null; then
+            RESULT="✅ All tests passed"
+          else
+            RESULT="❌ Tests failed"
+            gh pr ready "$BRANCH" --undo
+          fi
+          echo "result=${RESULT}" >> "$GITHUB_OUTPUT"
+          gh pr comment "$BRANCH" --body "${RESULT}: [Test workflow on this branch](${RUN_URL})"
 
       - name: Notify Slack
         if: always() && env.SLACK_URL != ''
@@ -226,5 +259,5 @@ jobs:
           webhook-type: incoming-webhook
           payload: |
             {
-              "text": "langchain sync v${{ env.VERSION }}: ${{ job.status == 'success' && 'PR created; the Test workflow runs on the sync branch' || format('job {0}', job.status) }}\n${{ needs.generate.outputs.breaking == 'true' && '⚠️ Breaking changes detected!' || '' }}\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View run>"
+              "text": "langchain sync v${{ env.VERSION }}: ${{ steps.tests.outputs.result || format('job {0}', job.status) }}\n${{ needs.generate.outputs.breaking == 'true' && '⚠️ Breaking changes detected!' || '' }}\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View run>"
             }
